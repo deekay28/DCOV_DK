@@ -22,7 +22,13 @@ import zipfile
 from pathlib import Path
 
 PATTERNS = {
-    "private key block": re.compile(rb"-----BEGIN (RSA |EC |OPENSSH |ENCRYPTED )?PRIVATE KEY-----"),
+    # Header AND a base64 body: a real PEM key. The bare header text also
+    # appears in file-type tables (e.g. Apache Tika's tika-mimetypes.xml,
+    # bundled by file_picker, uses it to *recognise* PEM files) - that is not
+    # a key and must not fail the build.
+    "private key block": re.compile(
+        rb"-----BEGIN (RSA |EC |DSA |OPENSSH |ENCRYPTED )?PRIVATE KEY-----\s*"
+        rb"(Proc-Type:[^\n]*\n(DEK-Info:[^\n]*\n)?\s*)?[A-Za-z0-9+/=\r\n]{64,}"),
     "backend secret env": re.compile(rb"DCOV_SECRET_KEY\s*=\s*\S{8,}"),
     "database URL with password": re.compile(rb"(postgres(ql)?|mysql)(\+\w+)?://[^:\s/]+:[^@\s]{3,}@"),
     "keystore password property": re.compile(rb"storePassword\s*=\s*\S+"),
