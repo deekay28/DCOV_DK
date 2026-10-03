@@ -1,0 +1,4 @@
+ffc6313080a9ae71d730a7f8c026348c1e31b808035a0e651a22a67cb8200ebf  DCOV-Android-release.apk
+bfd2d057508f3f2f6ef4b681fcff3f4bf1997a8b1148ba881dd5489390fc6d5a  app-arm64-v8a-release.apk
+e692d347e86ae52e6a5ed69622fc896a3697d8c1fcc6fb86d73f8a52612c1a8c  app-armeabi-v7a-release.apk
+c592e1f1a2ef325ea96251ab450fdc02e5c0ef329336e2307758b3bbe49f75c1  app-x86_64-release.apk

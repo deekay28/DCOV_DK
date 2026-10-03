@@ -1,0 +1,82 @@
+Signing: debug key (no release secrets configured)
+Flutter: Flutter 3.41.9 • channel stable • https://github.com/flutter/flutter.git
+Commit:  deeaff25d06862aea32e6f279a5accb2b47e8b2a
+Run:     https://github.com/deekay28/DCOV_DK/actions/runs/37147911761
+
+package: name='com.dcov.field' versionCode='2' versionName='1.1.0' platformBuildVersionName='16' platformBuildVersionCode='36' compileSdkVersion='36' compileSdkVersionCodename='16'
+minSdkVersion:'24'
+targetSdkVersion:'36'
+uses-permission: name='android.permission.CAMERA'
+uses-permission: name='android.permission.INTERNET'
+uses-permission: name='android.permission.ACCESS_NETWORK_STATE'
+uses-permission: name='android.permission.VIBRATE'
+uses-permission: name='com.dcov.field.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION'
+application-label:'DCOV'
+native-code: 'arm64-v8a' 'armeabi-v7a' 'x86_64'
+debuggable: no
+
+-rw-r--r-- 1 runner runner 101873461 Oct  3 19:33 ../dist/DCOV-Android-release.apk
+-rw-r--r-- 1 runner runner  39039519 Oct  3 19:34 ../dist/app-arm64-v8a-release.apk
+-rw-r--r-- 1 runner runner  30633107 Oct  3 19:34 ../dist/app-armeabi-v7a-release.apk
+-rw-r--r-- 1 runner runner  42021399 Oct  3 19:34 ../dist/app-x86_64-release.apk
+
+ffc6313080a9ae71d730a7f8c026348c1e31b808035a0e651a22a67cb8200ebf  DCOV-Android-release.apk
+bfd2d057508f3f2f6ef4b681fcff3f4bf1997a8b1148ba881dd5489390fc6d5a  app-arm64-v8a-release.apk
+e692d347e86ae52e6a5ed69622fc896a3697d8c1fcc6fb86d73f8a52612c1a8c  app-armeabi-v7a-release.apk
+c592e1f1a2ef325ea96251ab450fdc02e5c0ef329336e2307758b3bbe49f75c1  app-x86_64-release.apk
+APK      DCOV-Android-release.apk
+size     101,873,461 bytes (97.2 MiB)
+sha256   ffc6313080a9ae71d730a7f8c026348c1e31b808035a0e651a22a67cb8200ebf
+ABIs     arm64-v8a, armeabi-v7a, x86_64
+entries  484
+secret scan: clean; offline catalogue + policy bundled
+APK      app-arm64-v8a-release.apk
+size     39,039,519 bytes (37.2 MiB)
+sha256   bfd2d057508f3f2f6ef4b681fcff3f4bf1997a8b1148ba881dd5489390fc6d5a
+ABIs     arm64-v8a
+entries  468
+secret scan: clean; offline catalogue + policy bundled
+APK      app-armeabi-v7a-release.apk
+size     30,633,107 bytes (29.2 MiB)
+sha256   e692d347e86ae52e6a5ed69622fc896a3697d8c1fcc6fb86d73f8a52612c1a8c
+ABIs     armeabi-v7a
+entries  468
+secret scan: clean; offline catalogue + policy bundled
+APK      app-x86_64-release.apk
+size     42,021,399 bytes (40.1 MiB)
+sha256   c592e1f1a2ef325ea96251ab450fdc02e5c0ef329336e2307758b3bbe49f75c1
+ABIs     x86_64
+entries  468
+secret scan: clean; offline catalogue + policy bundled
+
+------------------------------------------------------------------------
+Independent verification (outside CI, 2026-10-04) of the APK downloaded from
+https://github.com/deekay28/DCOV_DK/releases/tag/android-v1.1.0-build2-run11
+------------------------------------------------------------------------
+Download + checksums     sha256sum -c SHA256SUMS.txt -> all 4 APKs OK
+Manifest (decoded from binary AndroidManifest.xml, not from aapt2):
+  package                com.dcov.field
+  versionName / Code     1.1.0 / 2
+  minSdkVersion          24   (Android 7.0)
+  targetSdkVersion       36   (Android 16)
+  compileSdkVersion      36
+  permissions            CAMERA, INTERNET, ACCESS_NETWORK_STATE, VIBRATE
+                         (+ com.dcov.field.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION,
+                          added by AndroidX, app-private)
+  uses-feature           android.hardware.camera required=false
+  queries                IMAGE_CAPTURE, PROCESS_TEXT, GET_CONTENT
+  android:debuggable     absent  -> release build, not debuggable
+  usesCleartextTraffic   true + networkSecurityConfig (LAN http:// server)
+Signature                APK Signature Scheme v2 (no v1; minSdk 24 does not need it)
+  certificate            CN=Android Debug, O=Android, C=US  (CI debug key)
+  cert SHA-256           1F:FA:23:D3:8B:DD:20:28:BD:D3:9D:AB:0E:C1:44:03:53:31:81:14:69:8D:44:7F:BB:1D:05:7F:13:1F:92:57
+On-device ML Kit         libmlkit_google_ocr_pipeline.so (3 ABIs) + 24 OCR model files under
+                         assets/mlkit-google-ocr-models/ (Latin) -> text recognition is BUNDLED,
+                         no model download needed at run time
+Barcode engine           libbarhopper_v3.so + assets/mlkit_barcode_models/ -> bundled ML Kit barcode
+Offline data             assets/.../components_seed.json (197,916 B), policy.json (5,486 B)
+Secret scan (CI)         tool/check_apk.py on all 4 APKs: clean
+Secret scan (manual)     libapp.so / dex / bundled assets searched for private keys, JWTs, API keys,
+                         GitHub/Google tokens, password assignments, DB URLs: none.
+Hard-coded addresses     only "http://192.168.1.20:8000" and "http://10.0.2.2:8000" as hint/example
+                         text in Settings/Login; the saved server address defaults to empty.

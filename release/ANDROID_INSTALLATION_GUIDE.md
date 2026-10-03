@@ -1,15 +1,30 @@
 # Installing DCOV on an Android phone
 
-> The APK is produced by the GitHub Actions build (see `ANDROID_RELEASE_TEST_REPORT.md`).
-> It was **not** present when this folder was assembled.
-
 ## 1. Get the APK
 
-GitHub → your repo → **Actions** → *Build apps* → latest green run →
-**Artifacts → DCOV-Android-APK** (zip). Inside: `DCOV-Android-release.apk`
-and `DCOV-Android-release.sha256`. Optional check on a PC:
-`certutil -hashfile DCOV-Android-release.apk SHA256` (Windows) or
-`sha256sum DCOV-Android-release.apk` — must equal the `.sha256` file.
+**Easiest:** open https://github.com/deekay28/DCOV_DK/releases and pick the
+newest **DCOV Android 1.1.0+2 (CI run N)** pre-release. Current one:
+https://github.com/deekay28/DCOV_DK/releases/tag/android-v1.1.0-build2-run11
+
+| File | For |
+|---|---|
+| `DCOV-Android-release.apk` (97 MB) | any phone (universal) |
+| `app-arm64-v8a-release.apk` (37 MB) | almost every phone from 2017 on |
+| `app-armeabi-v7a-release.apk` (29 MB) | old 32-bit phones |
+| `app-x86_64-release.apk` (40 MB) | emulators / Chromebooks |
+
+Optional integrity check on a PC: `certutil -hashfile DCOV-Android-release.apk SHA256`
+(Windows) or `sha256sum DCOV-Android-release.apk` must equal
+`DCOV-Android-release.sha256` from the same release. For run 11:
+`ffc6313080a9ae71d730a7f8c026348c1e31b808035a0e651a22a67cb8200ebf`.
+
+Alternative (signed-in GitHub users): Actions → a green *Build apps* run →
+scroll to the bottom → **Artifacts → DCOV-Android-APK** (zip, expires after 90 days).
+
+> **Test builds are signed with a fresh debug key on every CI run.** A newer
+> build cannot install over an older one: uninstall DCOV first (this deletes
+> its local history and queued scans - sync them first). Configure the
+> `ANDROID_KEYSTORE_*` repository secrets to get a stable release key.
 
 ## 2. Install
 
@@ -22,8 +37,7 @@ uninstall it first.
 **From a PC with adb:** enable Developer options → USB debugging, then
 `adb install -r DCOV-Android-release.apk`.
 
-Requires Android 7.0 or newer. ~90 % of phones use the arm64 build; the
-universal APK works on all.
+Requires Android 7.0 (API 24) or newer.
 
 ## 3. Start the server (for sign-in, sync, reports, server OCR)
 
