@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>DCOV — Component Origin Verification</title>
+<style>
+/* =========================================================================
+   DCOV field client
+   Design rule: the interface chrome is entirely achromatic. The only
+   saturated colour anywhere is a verdict. Under a work lamp, at arm's length,
+   colour therefore means exactly one thing.
+   ========================================================================= */
+:root{
+  --body:#0F1417; --panel:#171F24; --panel-2:#1D272D; --rule:#27333A;
+  --ink:#E6EBE9; --ink-2:#9EAEB6; --silk:#71838C;
+  --red:#D6392A; --green:#22ересь; --amber:#D19400; --grey:#7A858C;
+  --red-bg:#2A1210; --green-bg:#0E2318; --amber-bg:#2A2008; --grey-bg:#1B2126;
+  --mono:ui-monospace,"SF Mono",SFMono-Regular,"Cascadia Mono","Roboto Mono",Menlo,Consolas,monospace;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",sans-serif;
+  --tap:52px;
+}
+:root[data-theme="dark"]{ --green:#1FA463; }
+:root[data-theme="light"]{
+  --body:#E7E8E2; --panel:#F6F7F3; --panel-2:#EDEFE9; --rule:#C7CAC1;
+  --ink:#131A1E; --ink-2:#4C575D; --silk:#6B767C;
+  --red:#B32316; --green:#136B3C; --amber:#8A6400; --grey:#5E686E;
+  --red-bg:#FBE4E1; --green-bg:#DFF0E6; --amber-bg:#FAEFD2; --grey-bg:#E2E5E0;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--body); color:var(--ink); font-family:var(--sans);
+  font-size:15px; line-height:1.5; -webkit-font-smoothing:antialiased;
+  padding-bottom:calc(72px + env(safe-area-inset-bottom));
+}
+@media(min-width:900px){ body{padding-bottom:0} }
+
+/* silkscreen legend: the small uppercase labels printed beside components on a PCB */
+.silk{
+  font-family:var(--mono); font-size:10px; letter-spacing:.16em;
+  text-transform:uppercase; color:var(--silk); font-weight:600;
+}
+.mono{font-family:var(--mono)}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer;background:none;border:none}
+:focus-visible{outline:2px solid var(--ink); outline-offset:2px}
+
+/* ---------------------------------------------------------------- header */
+header{
+  position:sticky; top:0; z-index:40; background:var(--body);
+  border-bottom:1px solid var(--rule);
+  padding:10px 16px calc(10px) ; padding-top:calc(10px + env(safe-area-inset-top));
+  display:flex; align-items:center; gap:12px;
+}
+.wordmark{font-family:var(--mono); font-weight:700; letter-spacing:.06em; font-size:17px}
+.wordmark span{color:var(--silk); font-weight:500}
+.status{margin-left:auto; display:flex; align-items:center; gap:8px}
+.pill{
+  font-family:var(--mono); font-size:10.5px; letter-spacing:.08em; text-transform:uppercase;
+  border:1px solid var(--rule); border-radius:2px; padding:4px 7px; color:var(--ink-2);
+  white-space:nowrap;
+}
+.pill.live{color:var(--ink)}
+.icon-btn{
+  width:36px;height:36px;border:1px solid var(--rule);border-radius:2px;
+  display:grid;place-items:center;color:var(--ink-2);
+}
+.icon-btn:hover{color:var(--ink);border-color:var(--ink-2)}
+
+/* ------------------------------------------------------------------ shell */
+main{max-width:1240px;margin:0 auto;padding:16px}
+@media(min-width:900px){
+  main{padding:24px}
+  .split{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:24px;align-items:start}
+  .sticky{position:sticky;top:84px}
+}
+.view{display:none}
+.view.active{display:block}
+
+.card{background:var(--panel);border:1px solid var(--rule);border-radius:3px;padding:16px}
+.card + .card{margin-top:14px}
+.card h2{font-size:13px;margin:0 0 12px;font-weight:600;letter-spacing:.01em}
+hr.rule{border:0;border-top:1px solid var(--rule);margin:14px 0}
+
+/* ------------------------------------------------------------------ input */
+.entry label{display:block;margin-bottom:7px}
+.entry-row{display:flex;gap:8px}
+input[type=text],input[type=search],select{
+  width:100%;background:var(--panel-2);border:1px solid var(--rule);border-radius:2px;
+  padding:0 12px;height:var(--tap);
+  font-family:var(--mono);font-size:17px;letter-spacing:.06em;
+}
+input::placeholder{color:var(--silk);letter-spacing:.04em}
+input:focus,select:focus{border-color:var(--ink-2);outline:none}
+.btn{
+  height:var(--tap);padding:0 18px;border:1px solid var(--rule);border-radius:2px;
+  background:var(--panel-2);font-family:var(--mono);font-size:12px;letter-spacing:.1em;
+  text-transform:uppercase;font-weight:600;white-space:nowrap;
+}
+.btn:hover{border-color:var(--ink-2)}
+.btn-primary{background:var(--ink);color:var(--body);border-color:var(--ink)}
+.btn-primary:hover{opacity:.88}
+.btn-sm{height:36px;padding:0 12px;font-size:11px}
+.capture-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.capture-row .btn{width:100%;display:flex;align-items:center;justify-content:center;gap:7px}
+.hint{font-size:12.5px;color:var(--ink-2);margin:10px 0 0}
+
+/* ----------------------------------------------------------------- banner */
+.banner{
+  border-radius:3px;padding:18px 18px 16px;border:1px solid;
+  animation:drop .18s ease-out;
+}
+@keyframes drop{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){.banner{animation:none}}
+.banner .verdict{font-size:clamp(20px,5.2vw,27px);font-weight:750;letter-spacing:-.015em;line-height:1.15;margin:6px 0 0}
+.banner .sub{font-size:13.5px;margin:8px 0 0;opacity:.95}
+.b-RED{background:var(--red-bg);border-color:var(--red);color:var(--red)}
+.b-GREEN{background:var(--green-bg);border-color:var(--green);color:var(--green)}
+.b-YELLOW{background:var(--amber-bg);border-color:var(--amber);color:var(--amber)}
+.b-GREY{background:var(--grey-bg);border-color:var(--grey);color:var(--grey)}
+.escalate{
+  margin-top:12px;padding:10px 12px;border:1px dashed currentColor;border-radius:2px;
+  font-size:12.5px;line-height:1.45;
+}
+
+/* ------------------------------------------------------- signature: readout */
+/* The transformation readout. This is the element the product is built around:
+   it shows the marking as read, the marking as searched, and every layer the
+   matcher tried — so an inspector can audit the verdict rather than trust it. */
+.readout{background:var(--panel-2);border:1px solid var(--rule);border-radius:3px;padding:14px;margin-top:14px}
+.glyphs{display:flex;flex-wrap:wrap;gap:2px;align-items:center;margin:8px 0 2px}
+.glyph{
+  font-family:var(--mono);font-size:19px;font-weight:600;letter-spacing:0;
+  width:1.15em;text-align:center;padding:3px 0;border-bottom:2px solid transparent;
+}
+.glyph.changed{border-bottom-color:var(--amber);color:var(--amber)}
+.arrow{color:var(--silk);font-family:var(--mono);margin:0 6px}
+.cascade{margin-top:12px;border-top:1px solid var(--rule);padding-top:10px}
+.step{display:flex;gap:10px;align-items:baseline;padding:3.5px 0;font-size:12.5px}
+.step .mark{font-family:var(--mono);width:14px;flex:0 0 14px;text-align:center;font-weight:700}
+.step.pass .mark{color:var(--green)}
+.step.fail .mark{color:var(--silk)}
+.step .name{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;width:150px;flex:0 0 150px;color:var(--ink-2)}
+.step.pass .name{color:var(--ink)}
+.step .detail{color:var(--ink-2);font-size:12px;min-width:0;word-break:break-word}
+@media(max-width:640px){
+  .step{flex-wrap:wrap}
+  .step .name{width:auto;flex:0 0 auto}
+  .step .detail{flex-basis:100%;padding-left:24px}
+}
+
+/* ------------------------------------------------------------------ specs */
+.specs{margin-top:14px;border-top:1px solid var(--rule)}
+.spec{display:flex;gap:12px;padding:9px 0;border-bottom:1px solid var(--rule);font-size:13.5px}
+.spec dt{flex:0 0 132px;color:var(--silk);font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;padding-top:3px}
+.spec dd{margin:0;min-width:0;word-break:break-word}
+@media(max-width:520px){ .spec{flex-direction:column;gap:2px} .spec dt{flex:none} }
+.tag{
+  display:inline-block;font-family:var(--mono);font-size:10px;letter-spacing:.1em;
+  text-transform:uppercase;border:1px solid var(--rule);border-radius:2px;
+  padding:2px 6px;margin:0 5px 4px 0;color:var(--ink-2);
+}
+.tag.crit{border-color:var(--red);color:var(--red)}
+.notes{margin-top:12px;font-size:12.5px;color:var(--ink-2)}
+.notes li{margin:4px 0}
+
+/* --------------------------------------------------------------- gauges */
+.gauges{display:grid;grid-template-columns:repeat(auto-fit,minmax(112px,1fr));gap:1px;background:var(--rule);border:1px solid var(--rule);border-radius:3px;overflow:hidden}
+.gauge{background:var(--panel);padding:13px 12px}
+.gauge .n{font-family:var(--mono);font-size:26px;font-weight:700;line-height:1;letter-spacing:-.02em}
+.gauge .l{margin-top:6px}
+.gauge.red .n{color:var(--red)} .gauge.amber .n{color:var(--amber)} .gauge.green .n{color:var(--green)}
+
+/* ---------------------------------------------------------------- tables */
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{
+  text-align:left;padding:8px 10px;border-bottom:1px solid var(--rule);
+  font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--silk);font-weight:600;white-space:nowrap;
+}
+.tbl td{padding:9px 10px;border-bottom:1px solid var(--rule);vertical-align:top}
+.tbl tbody tr{cursor:pointer}
+.tbl tbody tr:hover{background:var(--panel-2)}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:7px;flex:0 0 8px}
+.d-YES,.d-chinese{background:var(--red)} .d-NO,.d-non_chinese{background:var(--green)}
+.d-UNKNOWN,.d-unknown_origin{background:var(--amber)} .d-not_found{background:var(--grey)}
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.filters{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-top:10px}
+.filters select{height:42px;font-size:13px;letter-spacing:.03em}
+.empty{padding:34px 16px;text-align:center;color:var(--ink-2);font-size:13.5px}
+.empty strong{display:block;color:var(--ink);margin-bottom:5px;font-size:15px}
+
+/* ------------------------------------------------------------------- nav */
+nav{
+  position:fixed;bottom:0;left:0;right:0;z-index:50;background:var(--panel);
+  border-top:1px solid var(--rule);display:grid;grid-template-columns:repeat(5,1fr);
+  padding-bottom:env(safe-area-inset-bottom);
+}
+nav button{
+  padding:9px 2px 10px;display:flex;flex-direction:column;align-items:center;gap:4px;
+  color:var(--silk);border-top:2px solid transparent;
+}
+nav button.active{color:var(--ink);border-top-color:var(--ink)}
+nav .nl{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase}
+@media(min-width:900px){
+  nav{position:sticky;top:0;bottom:auto;max-width:1240px;margin:0 auto;
+      grid-template-columns:repeat(5,max-content);gap:2px;border-top:0;
+      border-bottom:1px solid var(--rule);background:var(--body);padding:0 24px}
+  nav button{flex-direction:row;padding:12px 16px;border-top:0;border-bottom:2px solid transparent}
+  nav button.active{border-bottom-color:var(--ink)}
+}
+svg{width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+
+/* ----------------------------------------------------------------- misc */
+.cam{width:100%;border:1px solid var(--rule);border-radius:3px;background:#000;display:block;max-height:46vh;object-fit:cover}
+.toast{
+  position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom));
+  background:var(--ink);color:var(--body);padding:11px 16px;border-radius:2px;font-size:13px;
+  z-index:99;max-width:88vw;text-align:center;
+}
+.scanline{height:2px;background:var(--ink-2);animation:sweep 1.4s linear infinite;opacity:.55}
+@keyframes sweep{0%{transform:translateY(0)}50%{transform:translateY(150px)}100%{transform:translateY(0)}}
+@media(prefers-reduced-motion:reduce){.scanline{animation:none}}
+.suggest{border:1px solid var(--rule);border-radius:2px;padding:10px 12px;margin-top:8px;display:flex;gap:10px;align-items:center;cursor:pointer}
+.suggest:hover{background:var(--panel-2)}
+.suggest .s{margin-left:auto;font-family:var(--mono);font-size:12px;color:var(--ink-2)}
+.prose{font-size:13.5px;color:var(--ink-2);line-height:1.6;max-width:68ch}
+.prose p{margin:0 0 11px}
+.prose strong{color:var(--ink)}
+.warnbox{border:1px solid var(--amber);background:var(--amber-bg);color:var(--amber);
+         border-radius:3px;padding:13px 14px;font-size:13px;line-height:1.5}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wordmark">DCOV<span>/verify</span></div>
+  <div class="status">
+    <span class="pill" id="netPill">OFFLINE</span>
+    <span class="pill live" id="revPill">DB —</span>
+    <button class="icon-btn" id="themeBtn" aria-label="Switch between dark and light">
+      <svg viewBox="0 0 24 24"><path d="M12 3v2M12 19v2M5 12H3M21 12h-2M6 6 4.6 4.6M19.4 19.4 18 18M18 6l1.4-1.4M4.6 19.4 6 18"/><circle cx="12" cy="12" r="4"/></svg>
+    </button>
+  </div>
+</header>
+
+<nav>
+  <button data-view="verify" class="active"><svg viewBox="0 0 24 24"><path d="M3 7V4h3M21 7V4h-3M3 17v3h3M21 17v3h-3"/><rect x="8" y="8" width="8" height="8" rx="1"/></svg><span class="nl">Verify</span></button>
+  <button data-view="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/></svg><span class="nl">Catalogue</span></button>
+  <button data-view="history"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 4v4h4M12 7v5l3 2"/></svg><span class="nl">History</span></button>
+  <button data-view="dash"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span class="nl">Overview</span></button>
+  <button data-view="about"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg><span class="nl">Limits</span></button>
+</nav>
+
+<main>
+
+<!-- ============================================================== VERIFY -->
+<section class="view active" id="v-verify">
+  <div class="split">
+    <div>
+      <div class="card entry">
+        <div class="silk">Marking entry</div>
+        <label for="markInput" class="hint" style="margin:8px 0 8px">Type the marking exactly as etched, or scan a coded label. Case, spaces and dashes are ignored.</label>
+        <div class="entry-row">
+          <input type="text" id="markInput" placeholder="STM32F302C8T6" autocomplete="off"
+                 autocapitalize="characters" spellcheck="false" enterkeyhint="search"
+                 aria-label="Component marking">
+          <button class="btn btn-primary" id="goBtn">Verify</button>
+        </div>
+        <div class="capture-row">
+          <button class="btn" id="scanBtn">
+            <svg viewBox="0 0 24 24"><path d="M3 7V4h3M21 7V4h-3M3 17v3h3M21 17v3h-3M7 12h10"/></svg>
+            Scan code
+          </button>
+          <button class="btn" id="chipBtn">
+            <svg viewBox="0 0 24 24"><rect x="7" y="7" width="10" height="10" rx="1"/><path d="M10 3v4M14 3v4M10 17v4M14 17v4M3 10h4M3 14h4M17 10h4M17 14h4"/></svg>
+            Photograph chip
+          </button>
+        </div>
+        <div id="camWrap" hidden style="margin-top:12px">
+          <video class="cam" id="cam" playsinline muted></video>
+          <div class="scanline" id="scanline"></div>
+          <div class="entry-row" style="margin-top:8px">
+            <button class="btn btn-sm" id="camStop">Stop camera</button>
+            <button class="btn btn-sm" id="camShot" hidden>Capture frame</button>
+          </div>
+          <p class="hint" id="camHint"></p>
+        </div>
+        <p class="hint" id="quickHint"></p>
+      </div>
+
+      <div class="card">
+        <div class="silk">Try a marking from the catalogue</div>
+        <div id="samples" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px"></div>
+      </div>
+    </div>
+
+    <div id="resultPane" class="sticky"></div>
+  </div>
+</section>
+
+<!-- ============================================================== SEARCH -->
+<section class="view" id="v-search">
+  <div class="card">
+    <div class="silk">Catalogue search</div>
+    <input type="search" id="q" placeholder="Part number, manufacturer, subsystem…" style="margin-top:10px" aria-label="Search the catalogue">
+    <div class="filters">
+      <select id="fOrigin" aria-label="Filter by origin verdict"></select>
+      <select id="fSub" aria-label="Filter by subsystem"></select>
+      <select id="fCrit" aria-label="Filter by criticality"></select>
+      <select id="fCountry" aria-label="Filter by country"></select>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;margin-top:12px">
+      <span class="silk" id="qCount">—</span>
+      <button class="btn btn-sm" id="exportCsv" style="margin-left:auto">Export CSV</button>
+    </div>
+  </div>
+  <div class="card" style="padding:0">
+    <div class="scroll"><table class="tbl" id="qTable"></table></div>
+  </div>
+</section>
+
+<!-- ============================================================= HISTORY -->
+<section class="view" id="v-history">
+  <div class="card">
+    <div class="silk">Inspection history — this session</div>
+    <p class="hint">Held in memory only. The production client writes each scan to an encrypted local database and syncs it when a network appears; this demo deliberately keeps nothing after you close the tab.</p>
+    <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+      <button class="btn btn-sm" id="expHistCsv">Export CSV</button>
+      <button class="btn btn-sm" id="expHistJson">Export JSON</button>
+      <button class="btn btn-sm" id="clearHist">Clear</button>
+    </div>
+  </div>
+  <div class="card" style="padding:0">
+    <div class="scroll"><table class="tbl" id="hTable"></table></div>
+  </div>
+</section>
+
+<!-- ================================================================ DASH -->
+<section class="view" id="v-dash">
+  <div class="gauges" id="gauges"></div>
+  <div class="card" style="margin-top:14px">
+    <div class="silk">Chinese-origin parts by subsystem</div>
+    <div id="bars" style="margin-top:12px"></div>
+  </div>
+  <div class="card">
+    <div class="silk">Acceptance policy</div>
+    <p class="hint">Drawn from the CRITICAL / NON-CRITICAL matrix in the source workbook. A Chinese-origin part in a CRITICAL subsystem is an escalation, not a note.</p>
+    <div class="scroll" style="margin-top:10px"><table class="tbl" id="polTable"></table></div>
+  </div>
+</section>
+
+<!-- =============================================================== ABOUT -->
+<section class="view" id="v-about">
+  <div class="card">
+    <div class="silk">What a result means</div>
+    <div class="warnbox" style="margin:12px 0 14px">
+      A green result means <strong>no Chinese-origin record matched this marking</strong>.
+      It is not proof that the part is not Chinese.
+    </div>
+    <div class="prose">
+      <p>Three things can put a Chinese part behind a green banner. Markings can be
+      counterfeited or re-marked, and the package will read as whatever the re-marker
+      chose. A part can be absent from the catalogue entirely, in which case you get
+      grey, not green — but a near-miss marking can fuzzy-match the wrong record.
+      And the catalogue is only as current as its last import.</p>
+      <p>Of the <strong id="aboutTotal">—</strong> records seeded from the source
+      workbook, <strong id="aboutUnknown">—</strong> have no established country of
+      origin at all. Those return yellow. Yellow is not a soft green; it means nobody
+      has yet done the work to establish where that part was made.</p>
+      <p>Use this as screening support for a trained inspector: it finds the known-bad
+      fast and it shows its reasoning. It does not clear a part, and it does not
+      replace a teardown.</p>
+    </div>
+    <hr class="rule">
+    <div class="silk">Matching cascade</div>
+    <div class="prose" style="margin-top:10px">
+      <p>Every lookup runs the same six layers, cheapest first, and stops at the first
+      hit. The result screen shows which layer fired and why the others did not.
+      Below <strong>82%</strong> similarity nothing is auto-accepted; two candidates
+      within 2 points of each other are reported as ambiguous rather than guessed.
+      Where two records share a marking but disagree on origin, the app refuses the
+      verdict and hands both to you.</p>
+    </div>
+    <hr class="rule">
+    <div class="silk">Data provenance</div>
+    <div class="prose" style="margin-top:10px">
+      <p id="prov">—</p>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<script src="seed_data.js"></script>
+<script src="dcov-match.js"></script>
+<script>
+'use strict';
+(function () {
+
+const SEED = window.DCOV_SEED;
+const M = window.DCOVMatch;
+const COMPONENTS = SEED.components;
+const INDEX = new M.ComponentIndex(COMPONENTS);
+const POLICY = SEED.policy.criticality;
+const history = [];
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c =>
+  ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+
+/* ------------------------------------------------------------ chrome */
+$('#revPill').textContent = 'DB rev ' + SEED.generated;
+function netStatus(){
+  const p = $('#netPill');
+  p.textContent = navigator.onLine ? 'ONLINE' : 'OFFLINE';
+  p.classList.toggle('live', navigator.onLine);
+}
+addEventListener('online', netStatus); addEventListener('offline', netStatus); netStatus();
+
+$('#themeBtn').onclick = () => {
+  const r = document.documentElement;
+  r.dataset.theme = r.dataset.theme === 'dark' ? 'light' : 'dark';
+};
+
+$$('nav button').forEach(b => b.onclick = () => {
+  $$('nav button').forEach(x => x.classList.toggle('active', x === b));
+  $$('.view').forEach(v => v.classList.toggle('active', v.id === 'v-' + b.dataset.view));
+  if (b.dataset.view === 'history') renderHistory();
+  if (b.dataset.view === 'dash') renderDash();
+  scrollTo(0, 0);
+});
+
+let toastTimer;
+function toast(msg){
+  const old = $('.toast'); if (old) old.remove();
+  const t = document.createElement('div');
+  t.className = 'toast'; t.textContent = msg; t.setAttribute('role','status');
+  document.body.appendChild(t);
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.remove(), 3600);
+}
+
+/* ------------------------------------------------------------ verify */
+const BANNER_SUB = {
+  chinese:  'Do not fit. Record the finding against the inspection.',
+  non_chinese: 'No Chinese-origin record matched this marking. This is not a clearance — see Limits.',
+  unknown_origin: 'The part is in the catalogue but its origin was never established.',
+  not_found: 'Nothing in the catalogue matches this marking.'
+};
+
+function runVerify(raw, mode){
+  raw = (raw || '').trim();
+  if (!raw) { toast('Enter or scan a marking first.'); return; }
+  const t0 = performance.now();
+  const res = M.match(raw, INDEX);
+  const v = M.verdictFor(res.component, res.score, res.method);
+  const ms = Math.round(performance.now() - t0);
+
+  history.unshift({
+    at: new Date(), raw, mode: mode || 'manual', normalized: res.normalized_input,
+    result: v.result, method: res.method, score: res.score,
+    component_id: res.component ? res.component.component_id : '',
+    name: res.component ? res.component.component_name : '', ms
+  });
+
+  if (v.vibrate && navigator.vibrate) navigator.vibrate([90, 60, 90, 60, 180]);
+  if (v.result === 'chinese') beep();
+  renderResult(raw, res, v, ms);
+}
+
+/* A short two-tone alert. Deliberately not a pleasant sound. */
+function beep(){
+  try {
+    const ac = new (window.AudioContext || window.webkitAudioContext)();
+    [0, 0.22].forEach((t, i) => {
+      const o = ac.createOscillator(), g = ac.createGain();
+      o.type = 'square'; o.frequency.value = i ? 620 : 880;
+      g.gain.setValueAtTime(0.06, ac.currentTime + t);
+      g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + t + 0.18);
+      o.connect(g).connect(ac.destination);
+      o.start(ac.currentTime + t); o.stop(ac.currentTime + t + 0.19);
+    });
+  } catch (e) { /* audio unavailable — the banner and vibration still fire */ }
+}
+
+function glyphRow(from, to){
+  const a = from || '', b = to || '';
+  const n = Math.max(a.length, b.length);
+  let out = '<div class="glyphs">';
+  for (let i = 0; i < n; i++){
+    const ch = b[i] || '·';
+    const changed = (a[i] || '') !== (b[i] || '');
+    out += `<span class="glyph${changed ? ' changed' : ''}">${esc(ch)}</span>`;
+  }
+  return out + '</div>';
+}
+
+function renderResult(raw, res, v, ms){
+  const c = res.component;
+  const asRead = M.normalize(raw);
+  const searched = res.normalized_input;
+
+  let html = `<div class="banner b-${v.banner}">
+      <div class="silk" style="color:inherit;opacity:.85">Verdict</div>
+      <p class="verdict">${esc(v.headline)}</p>
+      <p class="sub">${esc(BANNER_SUB[v.result] || '')}</p>`;
+  if (v.escalate) html += `<div class="escalate"><strong>Escalate.</strong> ${esc(v.escalation_note)}</div>`;
+  if (v.action && !v.escalate) html += `<div class="escalate">${esc(v.action)}</div>`;
+  html += `</div>`;
+
+  /* signature readout */
+  html += `<div class="readout">
+      <div class="silk">Marking as read → as searched</div>
+      ${glyphRow(asRead, searched === asRead ? asRead : searched)}
+      <div class="mono" style="font-size:11.5px;color:var(--silk);margin-top:2px">
+        ${esc(asRead)} <span class="arrow">→</span> ${esc(searched)}
+        &nbsp;·&nbsp; ${ms} ms &nbsp;·&nbsp; ${esc(res.method)} @ ${res.score}%
+      </div>
+      <div class="cascade">
+        <div class="silk" style="margin-bottom:6px">Matching cascade</div>`;
+  (res.trace || []).forEach(t => {
+    html += `<div class="step ${t.hit ? 'pass' : 'fail'}">
+        <span class="mark">${t.hit ? '●' : '○'}</span>
+        <span class="name">${esc(t.layer)}</span>
+        <span class="detail">${esc(t.detail)}</span></div>`;
+  });
+  html += `</div></div>`;
+
+  if (c){
+    const alt = (c.alternative_manufacturer || '').split(';').filter(Boolean);
+    html += `<div class="card" style="margin-top:14px">
+      <div class="silk">Catalogue record</div>
+      <h2 style="font-size:17px;margin:8px 0 4px">${esc(c.component_name)}</h2>
+      <div style="margin-bottom:4px">
+        <span class="tag mono">${esc(c.component_id)}</span>
+        ${c.criticality === 'CRITICAL' ? '<span class="tag crit">Critical subsystem</span>' : `<span class="tag">${esc(c.criticality)}</span>`}
+        ${c.military_grade === 'YES' ? '<span class="tag">Mil grade</span>' : ''}
+      </div>
+      <dl class="specs">
+        ${spec('Marking', c.chip_number || c.part_number, true)}
+        ${spec('Manufacturer', c.manufacturer)}
+        ${spec('Country of origin', c.country_of_origin || 'Not established')}
+        ${spec('Subsystem', c.drone_subsystem)}
+        ${spec('Function', c.function)}
+        ${spec('Acceptance policy', c.criticality_policy)}
+        ${spec('Found in', c.supplier)}
+        ${spec('Remarks', c.remarks)}
+        ${spec('Evidence', c.verification_source)}
+        ${spec('Confidence', c.confidence_score + '%')}
+        ${spec('Barcode', c.barcode, true)}
+        ${alt.length ? `<div class="spec"><dt>Approved alternatives</dt><dd>${alt.map(a => `<div>${esc(a.trim())}</div>`).join('')}</dd></div>` : ''}
+      </dl>`;
+    if (res.notes && res.notes.length){
+      html += `<ul class="notes">${res.notes.map(n => `<li>${esc(n)}</li>`).join('')}</ul>`;
+    }
+    html += `</div>`;
+  } else {
+    html += `<div class="card" style="margin-top:14px">
+      <div class="silk">No record</div>
+      <p class="hint" style="margin-top:8px">
+        ${res.method === 'conflict' || res.method === 'ambiguous_prefix' || res.method === 'ambiguous_fuzzy'
+          ? 'The catalogue holds more than one candidate and they do not agree. Pick the correct record by eye, or refer it for adjudication.'
+          : 'Photograph the package, note where it was fitted, and queue it for the database manager. An unknown part is a gap in the catalogue, not a pass.'}
+      </p>`;
+    if (res.notes && res.notes.length)
+      html += `<ul class="notes">${res.notes.map(n => `<li>${esc(n)}</li>`).join('')}</ul>`;
+    html += `</div>`;
+  }
+
+  if (res.suggestions && res.suggestions.length){
+    html += `<div class="card" style="margin-top:14px"><div class="silk">Closest catalogue entries</div>`;
+    res.suggestions.slice(0, 5).forEach(s => {
+      const p = s.payload;
+      html += `<div class="suggest" data-pick="${esc(p.chip_number || p.part_number)}">
+        <span class="dot d-${esc(p.is_chinese)}"></span>
+        <span><span class="mono">${esc(p.chip_number || p.part_number)}</span><br>
+        <span style="font-size:12px;color:var(--ink-2)">${esc(p.component_name)}</span></span>
+        <span class="s">${Math.round(s.score)}%</span></div>`;
+    });
+    html += `</div>`;
+  }
+
+  const pane = $('#resultPane');
+  pane.innerHTML = html;
+  pane.querySelectorAll('[data-pick]').forEach(el =>
+    el.onclick = () => { $('#markInput').value = el.dataset.pick; runVerify(el.dataset.pick, 'manual'); });
+  if (innerWidth < 900) pane.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function spec(label, value, mono){
+  if (!value) return '';
+  return `<div class="spec"><dt>${esc(label)}</dt><dd${mono ? ' class="mono"' : ''}>${esc(value)}</dd></div>`;
+}
+
+$('#goBtn').onclick = () => runVerify($('#markInput').value, 'manual');
+$('#markInput').addEventListener('keydown', e => { if (e.key === 'Enter') runVerify(e.target.value, 'manual'); });
+
+/* sample chips: one of each verdict so the four states are reachable in one tap */
+(function samples(){
+  const pick = v => COMPONENTS.find(c => c.is_chinese === v && (c.chip_number || '').length > 5);
+  const list = [
+    [pick('YES').chip_number, 'Chinese'],
+    [pick('NO').chip_number || pick('NO').part_number, 'Non-Chinese'],
+    [(COMPONENTS.find(c => c.is_chinese === 'UNKNOWN' && c.chip_number) || {}).chip_number, 'Unknown'],
+    ['stm32 f3o2-c8t6', 'OCR misread'],
+    ['STM32G4A1KCU6 GQ23J 1B9U', 'With lot code'],
+    ['SN74LVC1G08', 'Not in catalogue']
+  ].filter(x => x[0]);
+  $('#samples').innerHTML = list.map(([code, label]) =>
+    `<button class="btn btn-sm" data-code="${esc(code)}" style="text-transform:none;letter-spacing:.02em">
+       <span class="mono">${esc(code)}</span> <span style="color:var(--silk)">· ${esc(label)}</span></button>`).join('');
+  $$('#samples button').forEach(b => b.onclick = () => {
+    $('#markInput').value = b.dataset.code; runVerify(b.dataset.code, 'manual');
+  });
+})();
+
+/* ------------------------------------------------------------ camera */
+let stream = null, detector = null, rafId = null;
+
+async function startCamera(mode){
+  const wrap = $('#camWrap'), video = $('#cam');
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 } }, audio: false });
+  } catch (e) {
+    toast('Camera unavailable. Type the marking instead — manual entry runs the identical check.');
+    return;
+  }
+  video.srcObject = stream; await video.play();
+  wrap.hidden = false;
+  $('#camShot').hidden = mode !== 'chip';
+  $('#scanline').style.display = mode === 'code' ? 'block' : 'none';
+
+  if (mode === 'code'){
+    if (!('BarcodeDetector' in window)){
+      $('#camHint').textContent = 'This browser has no barcode decoder. Read the digits off the label and type them in.';
+      return;
+    }
+    const formats = await BarcodeDetector.getSupportedFormats();
+    detector = new BarcodeDetector({ formats });
+    $('#camHint').textContent = 'Hold the label steady in frame. Supported: ' + formats.join(', ') + '.';
+    loop();
+  } else {
+    $('#camHint').textContent =
+      'Fill the frame with the package. Light it from the side — glare erases characters. ' +
+      'Capture, then type what you can read: this demo has no on-device OCR model, and the ' +
+      'production client uses ML Kit for this step.';
+  }
+}
+
+function loop(){
+  const video = $('#cam');
+  if (!stream || !detector) return;
+  detector.detect(video).then(codes => {
+    if (codes.length){
+      const raw = codes[0].rawValue;
+      stopCamera();
+      $('#markInput').value = raw;
+      toast('Read ' + codes[0].format);
+      runVerify(raw, codes[0].format.includes('qr') ? 'qr' : 'barcode');
+    }
+  }).catch(() => {});
+  rafId = requestAnimationFrame(loop);
+}
+
+function stopCamera(){
+  if (rafId) cancelAnimationFrame(rafId);
+  if (stream) stream.getTracks().forEach(t => t.stop());
+  stream = null; detector = null; rafId = null;
+  $('#camWrap').hidden = true;
+}
+
+$('#scanBtn').onclick = () => startCamera('code');
+$('#chipBtn').onclick = () => startCamera('chip');
+$('#camStop').onclick = stopCamera;
+$('#camShot').onclick = () => {
+  stopCamera();
+  $('#markInput').focus();
+  toast('Frame captured. Type the marking you can read.');
+};
+
+/* ---------------------------------------------------------- catalogue */
+function uniq(field){
+  return [...new Set(COMPONENTS.map(c => c[field]).filter(Boolean))].sort();
+}
+function fillSelect(id, label, values){
+  $(id).innerHTML = `<option value="">${label} — all</option>` +
+    values.map(v => `<option value="${esc(v)}">${esc(v)}</option>`).join('');
+}
+fillSelect('#fOrigin', 'Origin', ['YES', 'NO', 'UNKNOWN']);
+fillSelect('#fSub', 'Subsystem', uniq('drone_subsystem'));
+fillSelect('#fCrit', 'Criticality', uniq('criticality'));
+fillSelect('#fCountry', 'Country', uniq('country_of_origin'));
+
+const VERDICT_WORD = { YES: 'Chinese', NO: 'Non-Chinese', UNKNOWN: 'Unknown' };
+
+function filtered(){
+  const q = $('#q').value.trim().toLowerCase();
+  const qk = M.normalize($('#q').value);
+  const o = $('#fOrigin').value, s = $('#fSub').value,
+        cr = $('#fCrit').value, co = $('#fCountry').value;
+  return COMPONENTS.filter(c => {
+    if (o && c.is_chinese !== o) return false;
+    if (s && c.drone_subsystem !== s) return false;
+    if (cr && c.criticality !== cr) return false;
+    if (co && c.country_of_origin !== co) return false;
+    if (!q) return true;
+    if (qk && (c.search_key || '').startsWith(qk)) return true;
+    return [c.component_name, c.manufacturer, c.chip_number, c.part_number,
+            c.remarks, c.drone_subsystem, c.supplier]
+      .some(f => (f || '').toLowerCase().includes(q));
+  });
+}
+
+function renderSearch(){
+  const rows = filtered();
+  $('#qCount').textContent = rows.length + ' of ' + COMPONENTS.length + ' records';
+  const t = $('#qTable');
+  if (!rows.length){
+    t.innerHTML = `<tbody><tr><td><div class="empty"><strong>No records match</strong>
+      Clear a filter, or search on part of the marking.</div></td></tr></tbody>`;
+    return;
+  }
+  t.innerHTML = `<thead><tr><th>Origin</th><th>Marking</th><th>Component</th>
+      <th>Manufacturer</th><th>Country</th><th>Subsystem</th><th>Criticality</th></tr></thead>
+    <tbody>${rows.slice(0, 400).map(c => `
+      <tr data-code="${esc(c.chip_number || c.part_number)}">
+        <td style="white-space:nowrap"><span class="dot d-${esc(c.is_chinese)}"></span>${esc(VERDICT_WORD[c.is_chinese])}</td>
+        <td class="mono">${esc(c.chip_number || c.part_number)}</td>
+        <td>${esc(c.component_name)}</td>
+        <td>${esc(c.manufacturer)}</td>
+        <td>${esc(c.country_of_origin || '—')}</td>
+        <td>${esc(c.drone_subsystem)}</td>
+        <td${c.criticality === 'CRITICAL' ? ' style="color:var(--red)"' : ''}>${esc(c.criticality)}</td>
+      </tr>`).join('')}</tbody>`;
+  t.querySelectorAll('tbody tr[data-code]').forEach(tr => tr.onclick = () => {
+    $$('nav button')[0].click();
+    $('#markInput').value = tr.dataset.code;
+    runVerify(tr.dataset.code, 'manual');
+  });
+  if (rows.length > 400) $('#qCount').textContent += ' — showing first 400';
+}
+['#q', '#fOrigin', '#fSub', '#fCrit', '#fCountry'].forEach(id => {
+  $(id).addEventListener('input', renderSearch);
+});
+renderSearch();
+
+/* ----------------------------------------------------------- exports */
+function download(name, text, mime){
+  const b = new Blob([text], { type: mime });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(b); a.download = name; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  toast('Saved ' + name);
+}
+function csv(rows, cols){
+  const cell = v => `"${String(v == null ? '' : v).replace(/"/g, '""')}"`;
+  return '\uFEFF' + [cols.join(','), ...rows.map(r => cols.map(c => cell(r[c])).join(','))].join('\r\n');
+}
+$('#exportCsv').onclick = () => {
+  const rows = filtered();
+  download('dcov_catalogue.csv', csv(rows, SEED.fields), 'text/csv');
+};
+
+/* ----------------------------------------------------------- history */
+function renderHistory(){
+  const t = $('#hTable');
+  if (!history.length){
+    t.innerHTML = `<tbody><tr><td><div class="empty"><strong>Nothing verified yet</strong>
+      Every check you run this session lands here, with the marking, the layer that matched and the verdict.</div></td></tr></tbody>`;
+    return;
+  }
+  t.innerHTML = `<thead><tr><th>Time</th><th>Verdict</th><th>Entered</th><th>Searched</th>
+      <th>Matched</th><th>Layer</th><th>Score</th><th>Mode</th></tr></thead>
+    <tbody>${history.map(h => `<tr>
+      <td class="mono" style="white-space:nowrap">${h.at.toLocaleTimeString()}</td>
+      <td style="white-space:nowrap"><span class="dot d-${esc(h.result)}"></span>${esc(h.result.replace('_', ' '))}</td>
+      <td class="mono">${esc(h.raw)}</td>
+      <td class="mono">${esc(h.normalized)}</td>
+      <td>${esc(h.name || '—')}</td>
+      <td class="mono" style="font-size:11px">${esc(h.method)}</td>
+      <td class="mono">${h.score}</td>
+      <td class="mono" style="font-size:11px">${esc(h.mode)}</td></tr>`).join('')}</tbody>`;
+}
+$('#expHistCsv').onclick = () => {
+  if (!history.length) return toast('No scans to export yet.');
+  download('dcov_history.csv',
+    csv(history.map(h => ({ ...h, at: h.at.toISOString() })),
+        ['at', 'raw', 'normalized', 'result', 'method', 'score', 'component_id', 'name', 'mode', 'ms']),
+    'text/csv');
+};
+$('#expHistJson').onclick = () => {
+  if (!history.length) return toast('No scans to export yet.');
+  download('dcov_history.json', JSON.stringify(history, null, 1), 'application/json');
+};
+$('#clearHist').onclick = () => {
+  if (!history.length) return;
+  history.length = 0; renderHistory(); toast('History cleared.');
+};
+
+/* -------------------------------------------------------------- dash */
+function renderDash(){
+  const n = v => COMPONENTS.filter(c => c.is_chinese === v).length;
+  const critCn = COMPONENTS.filter(c => c.is_chinese === 'YES' && c.criticality === 'CRITICAL').length;
+  const g = [
+    ['', COMPONENTS.length, 'Records'],
+    ['red', n('YES'), 'Chinese origin'],
+    ['green', n('NO'), 'Non-Chinese'],
+    ['amber', n('UNKNOWN'), 'Origin unknown'],
+    ['red', critCn, 'Chinese + critical'],
+    ['', history.length, 'Verified this session']
+  ];
+  $('#gauges').innerHTML = g.map(([cls, num, label]) =>
+    `<div class="gauge ${cls}"><div class="n">${num}</div><div class="l silk">${label}</div></div>`).join('');
+
+  const bySub = {};
+  COMPONENTS.filter(c => c.is_chinese === 'YES').forEach(c => {
+    bySub[c.drone_subsystem] = (bySub[c.drone_subsystem] || 0) + 1;
+  });
+  const entries = Object.entries(bySub).sort((a, b) => b[1] - a[1]);
+  const max = Math.max(...entries.map(e => e[1]), 1);
+  $('#bars').innerHTML = entries.map(([sub, count]) => {
+    const crit = (POLICY[sub] || {}).level === 'CRITICAL';
+    return `<div style="display:flex;align-items:center;gap:10px;margin:7px 0">
+      <span style="flex:0 0 152px;font-size:12.5px${crit ? ';color:var(--red)' : ''}">${esc(sub)}</span>
+      <span style="flex:1;height:16px;background:var(--panel-2);position:relative">
+        <span style="position:absolute;inset:0 auto 0 0;width:${(count / max) * 100}%;background:${crit ? 'var(--red)' : 'var(--grey)'}"></span>
+      </span>
+      <span class="mono" style="flex:0 0 26px;text-align:right;font-size:12.5px">${count}</span></div>`;
+  }).join('');
+
+  $('#polTable').innerHTML = `<thead><tr><th>Subsystem</th><th>Level</th><th>Policy</th></tr></thead>
+    <tbody>${Object.entries(POLICY).map(([sub, p]) => `<tr style="cursor:default">
+      <td>${esc(sub)}</td>
+      <td${p.level === 'CRITICAL' ? ' style="color:var(--red)"' : ''}>${esc(p.level)}</td>
+      <td>${esc(p.policy)}</td></tr>`).join('')}</tbody>`;
+}
+
+/* ------------------------------------------------------------- about */
+$('#aboutTotal').textContent = COMPONENTS.length;
+$('#aboutUnknown').textContent = COMPONENTS.filter(c => c.is_chinese === 'UNKNOWN').length;
+$('#prov').textContent =
+  `Seeded from ${SEED.source}, normalised ${SEED.generated}. ` +
+  `${COMPONENTS.length} records drawn from the OEM landscape, the component identification ` +
+  `worksheet, the teardown observations and the standing watchlist, cross-referenced against ` +
+  `the critical/non-critical acceptance matrix and the NDDA / Blue UAS approved list.`;
+
+$('#quickHint').textContent =
+  `${COMPONENTS.length} records loaded. Works with no network — nothing you type leaves this device.`;
+
+$('#markInput').focus();
+})();
+</script>
+</body>
+</html>
