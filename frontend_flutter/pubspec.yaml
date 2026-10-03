@@ -28,9 +28,10 @@ dependencies:
   mobile_scanner: ^7.0.0      # barcode/QR - Android (ML Kit), iOS/macOS (Apple Vision), web. No Windows camera support.
   image_picker: ^1.1.2        # chip photo capture - all platforms incl. web/desktop file picker
   # On-device OCR (Android/iOS), Latin model bundled in the app - works with
-  # no network. Range, not caret: let pub pick the newest release compatible
-  # with the Flutter SDK doing the build.
-  google_mlkit_text_recognition: ">=0.15.0 <1.0.0"
+  # no network. Capped below 0.17: 0.17+ is built for AGP 9 built-in Kotlin
+  # (Flutter >=3.44) and cannot coexist with plugins that still apply
+  # kotlin-android - see FLUTTER_VERSION in .github/workflows/build-apps.yml.
+  google_mlkit_text_recognition: ">=0.15.0 <0.17.0"
 
   # device capability
   vibration: ^2.0.1           # Android/iOS only - no-ops harmlessly elsewhere
