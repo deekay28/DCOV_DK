@@ -1,0 +1,34 @@
+# --- core API -------------------------------------------------------------
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+pydantic==2.10.4
+pydantic-settings==2.7.0
+python-multipart==0.0.20
+
+# --- database -------------------------------------------------------------
+SQLAlchemy==2.0.36
+alembic==1.14.0
+aiosqlite==0.20.0
+asyncpg==0.30.0            # PostgreSQL (server mode)
+asyncmy==0.2.10 ; platform_system != "Windows"   # MySQL/MariaDB (server mode)
+greenlet==3.1.1
+
+# --- security -------------------------------------------------------------
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+bcrypt==4.2.1
+cryptography==44.0.0
+# NOTE on encryption at rest: no line here provides it, on purpose.
+# sqlcipher3-binary used to be listed here, but it cannot actually encrypt
+# anything as this app is architected: SQLAlchemy's SQLCipher support is a
+# *synchronous* dialect (sqlite+pysqlcipher://), and aiosqlite - the async
+# engine this app uses throughout - has no supported way to swap its
+# underlying driver for SQLCipher's. Installing sqlcipher3-binary alongside
+# aiosqlite would do nothing; leaving it in requirements.txt implied a
+# protection that wasn't there. See docs/ADMIN_MANUAL.md's "Encryption at
+# rest" section for what to actually do instead.
+
+# --- data / reporting -----------------------------------------------------
+openpyxl==3.1.5
+pandas==2.2.3
+reportlab==4.2.5

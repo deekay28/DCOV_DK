@@ -1,0 +1,44 @@
+# Caddy in front of the backend and web client.
+#
+# {$DCOV_DOMAIN:localhost} is the whole trick: Caddy inspects the site
+# address at startup and picks the right certificate strategy on its own -
+#   - a real DNS hostname (dcov.yourunit.mil)  -> automatic public ACME
+#     (Let's Encrypt/ZeroSSL), renewed automatically, no config needed
+#   - an IP literal or "localhost" (the default, for a LAN-only field
+#     deployment with no public DNS) -> Caddy's own internal CA issues a
+#     locally-trusted cert automatically; browsers need to trust that CA
+#     once (see docs/DEPLOY.md's TLS section) or click through one warning
+#
+# Routing everything through one origin also means the browser never makes
+# a cross-origin request to the API at all - the CORS configuration in
+# app/main.py becomes a defence-in-depth backstop, not something you need
+# to get right for the app to function.
+{$DCOV_DOMAIN:localhost} {
+	encode gzip zstd
+
+	header {
+		X-Content-Type-Options nosniff
+		X-Frame-Options DENY
+		Referrer-Policy no-referrer
+		Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
+	}
+
+	@api path /api/* /health /ready
+	handle @api {
+		reverse_proxy backend:8000 {
+			header_up X-Forwarded-Proto {scheme}
+			header_up X-Real-IP {remote_host}
+		}
+	}
+
+	handle {
+		reverse_proxy web:80
+	}
+
+	log {
+		output file /data/access.log {
+			roll_size 20mb
+			roll_keep 10
+		}
+	}
+}

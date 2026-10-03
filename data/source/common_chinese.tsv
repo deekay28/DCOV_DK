@@ -1,0 +1,25 @@
+ser	chip_ref	subsystem
+1	STM32F302C8T6	GCS, Baro Board, FCS, ESC (Vertiq/Falcon 120x models)
+2	STM32F103C8T6	GCS, Baro Board, FCS
+3	STM32F405RGT6	GCS
+4	STM32F722	GCS, FCS
+5	ESP32	Wireless connectivity for GCS
+6	AT7456	GCS
+7	YT8531C	GCS - Ethernet Transformer
+8	MT28-XS002	GCS - Ethernet Transformer
+9	STM32G030F6P6	Radio Modem
+10	FEMDRM016G-58A43	Receiver Module
+11	STM32F030CCT6	Video Receiver Module
+12	RTL8822CE	WiFi Module on NVIDIA Jetson Orin Nano
+13	STM32F412Z6T6	Power Supply
+14	ADIN1300BCPZ	Camera Streaming Device
+15	M2516KLE	EO/IR Camera
+16	STM32G491KCU6	GNSS Receiver
+17	STM32G4A1KCU6	GNSS Receiver
+18	STM32F26830	GNSS Receiver
+19	RTL8119L	WiFi Module on NVIDIA Jetson Nano
+20	SDINBDG4-16G	Memory Storage on NVIDIA Jetson Nano
+21	H3 LB042BA 9BA2	CRPA
+22	H4801G	Network Switch
+23	STM32F446RCT7	Servo
+24	MS1224	Ethernet to OFC Converter

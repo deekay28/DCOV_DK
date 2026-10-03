@@ -1,0 +1,44 @@
+ser	main_component	sub_component	oem	country
+1	GCS		Arduino	Italy
+1	GCS	ATMEGA16U2	Atmel	Philippines
+1	GCS	ATSAM3X8E	Microchip Technology Inc	USA
+2	GDT/RVT Radio		Exicom Technologies	India
+2	GDT/RVT Radio	XC7Z030	Xilinx	USA
+2	GDT/RVT Radio	2FAI5 RWI39	Micron Technology	USA
+2	GDT/RVT Radio	MRA923C4G-P	Alliance Memory Inc	USA
+3	GDT Radio	CIRRUS 42L51C	Cirrus Logic	USA
+3	GDT Radio	65981ABI	Texas Instruments	USA
+4	Auto Pilot		Cube Pilot Global Pvt Ltd	Taiwan
+5	GPS + Compass		Cube Pilot Global Pvt Ltd	Taiwan
+5	GPS + Compass	13156 PNI2GA330302	PNI Sensor Corporation	USA
+5	GPS + Compass	DAE J2347 MJ2	Daejin Semiconductor	South Korea
+5	GPS + Compass	STM32H757ZIY6	STMicroelectronics	Taiwan
+6	CRPA		InfiniDome	Israel
+6	CRPA	STM32G484	STMicroelectronics	Philippines
+6	CRPA	ADF4350	Analog Devices Inc	USA
+6	CRPA	MX25L12833F	Macronix (MXIC)	Taiwan
+7	Power Module		Cube Pilot Global Pvt Ltd	Taiwan
+7	Power Module	B610 LT 0D30	Texas Instruments	USA
+7	Power Module	INA169	Linear Technology	USA
+8	ADT and GDT Radio Modem		Microhard Systems Inc	Canada
+8	ADT and GDT Radio Modem	TAIMAG HC-027 2340	TAIMAG Corporation	Taiwan
+9	ADT and GDT Radio Modem	MP243E	Texas Instruments	USA
+9	ADT and GDT Radio Modem	SP330EEY	Exar Corporation	USA
+10	ADT and GDT Radio Modem	FM6903	RF Micro Devices	USA
+10	ADT and GDT Radio Modem	EFR32FG13P231HG	Silicon Labs	USA
+11	Modem Controller and Camera Encoder		Raspberry Pi Ltd	United Kingdom
+11	Modem Controller and Camera Encoder	BCM2711	Broadcom Inc	USA
+11	Modem Controller and Camera Encoder	VL805-Q6	VIA Labs Inc	Taiwan
+12	SDR PCB	SI5351 B224C6	Silicon Labs	USA
+12	SDR PCB	MAX2837	Maxim Integrated	USA
+12	SDR PCB	LPC4320FBD144	NXP Semiconductors	Taiwan
+13	Camera Encoder PCB		TP-Link Systems Inc	USA
+13	Camera Encoder PCB	RTL8367S	Realtek Semiconductor	Taiwan
+13	Camera Encoder PCB	EN25Q16B-104HIP	Eon Silicon Solution	Taiwan
+14	Power Distribution Board		Peregrine Aerospace Pvt Ltd	India
+14	Power Distribution Board	MP1584EN	Monolithic Power Systems	USA
+14	Power Distribution Board	B340A	Diodes Incorporated	Taiwan
+15	ESC		Welkinrim Technologies Pvt Ltd	India
+15	ESC	FDBL0630N150	ONSEMI	USA
+15	ESC	34CFD3T LS01050	Texas Instruments	USA
+16	Camera EO and IR		Next Vision Ltd	Israel

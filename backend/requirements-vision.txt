@@ -1,0 +1,7 @@
+# Server-side OCR. Optional: on mobile the work is done on-device by ML Kit.
+# Install with:  pip install -r requirements.txt -r requirements-vision.txt
+opencv-python-headless==4.10.0.84
+numpy==2.1.3
+pytesseract==0.3.13          # also needs the tesseract-ocr binary (see Dockerfile)
+easyocr==1.7.2               # pulls torch; ~2 GB. Omit for a slim deployment.
+pyzbar==0.1.9                # server-side barcode decode (needs libzbar0)

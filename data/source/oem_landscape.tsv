@@ -1,0 +1,105 @@
+category	oem	country
+Flight Controller	mRO	USA
+Flight Controller	Cube	Taiwan/Australia
+Flight Controller	3DR	USA
+Flight Controller	Agam Robotics	India
+Flight Controller	IO Tech	India
+Flight Controller	Zero Drag	India
+Radio Module	Kalpintech	India
+Radio Module	Doodle Labs	Singapore
+Radio Module	Exicom Technologies	India
+Radio Module	RF Design	Australia
+Radio Module	Taysink Tech Inc	USA
+Radio Module	Idea Forge	India
+Radio Module	8 devices	EU
+Antenna	Aquatronics	India
+Antenna	Optiemus Unmanned Sys	India
+Antenna	Exicom Technologies	India
+Antenna	RF Design	Australia
+Antenna	Doodle Labs	Singapore
+Antenna	True RC	Canada
+Antenna	IO Tech	India
+CRPA Antenna	Mtratech	Taiwan
+CRPA Antenna	Zoid Tech	Belarus
+CRPA Antenna	Fisheyes	Belgium
+CRPA Antenna	Rpi Nuand	UK/USA
+CRPA Antenna	Idea Forge	India
+HHGCS	Getac	Taiwan
+HHGCS	HP	USA
+HHGCS	Panasonic F2-G2	Japan
+HHGCS	FoxTech	China
+ESC	Vertiq	USA
+ESC	Welkinrim Tech	India
+ESC	Botlab Dynamics	India
+ESC	Hobby Wing	China
+ESC	HAKRC	China
+ESC	Hargraves Tech	Australia
+ESC	Ipremium	India
+ESC	Ingrid Tech	India
+ESC	Scorpian Sys	Taiwan
+Motor	Iqnetics	USA
+Motor	Vertiq	USA
+Motor	Welkinrim Tech	India
+Motor	Sun Mint Elect LLP	India
+Motor	E Propelled	USA
+Motor	Motion Drive	India
+Motor	IO Tech	India
+Motor	Scorpian Sys	Taiwan
+GNSS Receiver	Signfic Sys	India
+GNSS Receiver	U Blox	Switzerland/Australia
+GNSS Receiver	Inertial Labs Inc	USA
+GNSS Receiver	Infidome / GPSDome	Israel
+GNSS Receiver	Idea Forge	India
+GNSS Receiver	Sierra Aerospace	India
+GNSS Receiver	Reliant Electronic Design	India
+EO/IR/VPS	Nextvision	Israel
+EO/IR/VPS	Nurlmch Inc	Taiwan
+EO/IR/VPS	Defendrone	India
+EO/IR/VPS	Baumer	Germany
+EO/IR/VPS	Tamron	India
+EO/IR/VPS	Skoopia	USA
+EO/IR/VPS	E Vision	India
+EO/IR/VPS	Trimmer	India
+EO/IR/VPS	Teledyne FLIR	USA
+EO/IR/VPS	Harrier	UK
+On Board Computer	RP Tech	India
+On Board Computer	Rpi 4 Model B	UK
+On Board Computer	NVIDIA Jetson (Orin, Nano)	USA/Taiwan
+On Board Computer	Idea Forge	India
+On Board Computer	Real Tech	India
+Power Distribution Board	Hargraves	Australia
+Power Distribution Board	Optiemus Unmanned Sys	India
+Power Distribution Board	Reflex Drive	India
+Power Distribution Board	Oppila Microsys	India
+Power Distribution Board	Idea Forge	India
+Power Distribution Board	IO Tech	India
+Current Sensor	3DR	USA
+DC-DC Converter	Vyom	India
+DC-DC Converter	TDK Lambda	Japan
+IMU	Zreyah	India
+IMU	Inertial Labs Inc	USA
+IMU	IO Tech	India
+Ethernet Switch	Kapek	USA
+Ethernet Switch	Botblox	UK
+Ethernet Switch	D Link	Taiwan
+Voltage Regulator	Vyom Drones	India
+Voltage Regulator	Idea Forge	India
+Voltage Regulator	Castle Creation	USA
+Joystick Controller	Vijay Fastners	India
+Joystick Controller	Nintendo Switch	Japan
+Joystick Controller	Logitech	Switzerland
+Joystick Controller	Ant Plus	India
+Joystick Controller	Sony	China
+Joystick Controller	New Global Comn	India
+Propeller	SR Aero Space	India
+Propeller	Nautical Wg	India
+Propeller	Venus Injectoplast	India
+Propeller	Zenmtech	Singapore
+HHGCS Battery	Dazzle Robotics	India
+HHGCS Battery	Panasonic	Japan
+HHGCS Battery	X Power Plus	India
+HHGCS Battery	Idea Forge	India
+HHGCS Battery	Moticel	Taiwan
+Battery Charger	Algofet	India
+Battery Charger	Electrica Energy	India
+Battery Charger	Ascent Power	China

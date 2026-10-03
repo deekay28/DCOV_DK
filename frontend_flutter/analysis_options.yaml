@@ -1,0 +1,16 @@
+include: package:flutter_lints/flutter.yaml
+
+linter:
+  rules:
+    prefer_single_quotes: true
+    always_declare_return_types: true
+    avoid_print: true
+    cancel_subscriptions: true
+    close_sinks: true
+
+analyzer:
+  exclude:
+    - build/**
+  errors:
+    missing_required_param: error
+    missing_return: error

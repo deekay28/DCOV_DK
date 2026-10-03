@@ -1,0 +1,35 @@
+ser	item	model_make	chip	manufacturer	function	remarks
+1	EO/IR Camera	TRB_L6D_ZDM (HWYL, India)	M2516KLE	MediaTek	Low Power Controller	COO China
+2	Trip2 Module (Streaming Device)	Trip 2 (NextVision)	ADIN1300BCPZ	Analog Devices	Low power single port Gigabit Ethernet PHY	COO China
+3	Day Camera	Tamron	TC58NYG0S3H	Kioxia/Toshiba	NAND Flash Memory	Non-critical
+4	Electronic Speed Controller	Ipremium	STM32F302C8T6	ST Microelectronics	Microcontroller	COO China
+5	Electronic Speed Controller	Hobbywing	Complete sealed assembly	Hobbywing	ESC	COO China
+6	Electronic Speed Controller	HAKRC	HAKRC	HAKRC	Microcontroller	Non-critical
+7	GNSS Receiver	TrueNavPro-G4 V1.1B	STM32G4A1KCU6	ST Microelectronics	Microcontroller	COO China
+8	GNSS Receiver	Precision Point-Pro V1.1	STM32G4A1	ST Microelectronics	Microcontroller	Made in China
+9	Video Receiver (VRx)	Orqa	STM32F302K8	ST Microelectronics	Microcontroller	Made in China
+10	Radio Modem	Picoradio-162 Rev 1.1	STM32F26830	ST Microelectronics	Microcontroller	Made in China
+11	Radio Modem	pMDDL1624 (M/s Kalpin Tech)	STM32G030F6P6	ST Microelectronics	Microcontroller	COO China
+12	Receiver Module	Argosdyne (South Korea)	FEMDRM016G-58A43	Foresee	NAND Flash Memory	Embedded storage
+13	GCS	Argosdyne (South Korea)	MT28-XS002L	Heling Electronics	Pulse Transformer	Made in China
+14	Radio Module (GDT and ADT)	Condor UL0087-HX (Exicom)	CIRRUS 42L51CWP2211	Cirrus Logic	A/D Converter	Non-critical
+15	Power Supply Board	IO Tech (India)	STM32F412	STMicroelectronics	Microcontroller	
+16	Flight Controller	Orqa (Croatia)	STM32F405RGT6	STMicroelectronics	Microcontroller	
+17	On Board Computer	NVIDIA Jetson Nano (USA)	RTL8119L	Realtek	Network Interface Controller	
+18	SSD	WDS 25DG2G0C-00CD (Malaysia)	11850012BG	Sandisk	Non-volatile Memory	COO China
+19	SSD	NVIDIA Jetson Nano (USA)	SDINBDG4-16G	Sandisk	Non-volatile Memory	Non-critical
+20	Wifi Module	NVIDIA Jetson Orin Nano	RTL8822CE	Realtek	WiFi Module	
+21	Ethernet Switch	BB-SEI-C-1 (M/s Kapek USA)	ST3268A	Shenzhen STCOMM	Controller IC	Made in China
+22	Network Switch	5 Port Gigabit (M/s Power Integrations USA)	H4801G	E-Netter	Pulse Transformer	
+23	Ethernet Switch	Perle	Ethernet Switch	Marvell	Microcontroller	Non-critical
+24	Router	RB750G (Mikrotik, Latvia)	DRAM	Foresee	Volatile Memory for system operation	
+25	Baro Board (GDT)	Asteria Aerospace (India)	STM32F302C8T6	ST Microelectronics	Microcontroller	COO China
+26	Radio (GDT)	Domo Tactical Communications (UK)	SD Card	Sandisk	Storage Memory	Non-critical
+27	CRPA GPS Board	Emlid (Hungary)	H3 LB042BA 9BA2	Allwinner Tech	Volatile Memory	COO China
+28	CRPA Antenna	Heavybot4 (IO Tech)	STM32F412RET6	ST Microelectronics	Microcontroller	
+29	Air Speed Sensor	TrueSpeed V1.1 (Sierra Aerospace India)	STM32G491KCU6	ST Microelectronics	Microcontroller	COO China
+30	Actuators for propeller	MKS Servos (Taiwan)	STM32F446RCT7	ST Microelectronics	Microcontroller	COO China
+31	Auto Pilot Assy	Auto Pilot Assy	EEPROM U-19		Memory	Non-critical
+32	Engine Control Unit	Skypower	STM32 (partial marking)	ST Microelectronics	Microcontroller for ECU	Non-critical
+33	USB to HDMI Converter	SFX_HDMI_VC_V1.6	MS1224	Macro Silicon	Digital Video Encoding	COO China
+34	Ethernet to OFC Converter	BTRY Energy (Ukraine)	MS1224	Macro Silicon	Digital Video Encoding	

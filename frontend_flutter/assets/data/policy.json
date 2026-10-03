@@ -1,0 +1,60 @@
+{
+  "_source": "Derived from sheets 'CRITICAL NON CRITICAL COMPONENT' and 'COMMON CHINESE' of Chinese_Components_FINAL.xlsx",
+  "criticality": {
+    "Flight Controller": {"level": "CRITICAL", "policy": "Chinese origin NOT acceptable", "note": "Controls the air vehicle, flight path and Tx/Rx of data. Mostly CubePilot variants (Australia) with Taiwan-sourced parts; indigenous FCUs also available."},
+    "On Board Computer": {"level": "CRITICAL", "policy": "Chinese origin NOT acceptable", "note": "Mostly NVIDIA Jetson variants of US origin, but WiFi module and DRAM/storage often of Chinese origin."},
+    "CRPA": {"level": "CRITICAL", "policy": "Chinese origin NOT acceptable", "note": "STM32F4 microcontrollers found to be of Chinese origin."},
+    "GNSS Receiver": {"level": "CRITICAL", "policy": "Chinese origin NOT acceptable", "note": "STM32G4A1KEU6 class ICs found to be of Chinese origin."},
+    "RTK GNSS Receiver": {"level": "CRITICAL", "policy": "Chinese origin NOT acceptable", "note": "Alternate/backup for main GPS receiver; Chinese-origin chips found in some units."},
+    "Radio Modem": {"level": "CRITICAL", "policy": "Chinese origin not acceptable except passive components not in the Tx/Rx chain", "note": "A/D converters and passive ICs in GDT/radio modems found to be of Chinese origin."},
+    "GCS": {"level": "CRITICAL", "policy": "Chinese origin NOT acceptable. GETAC (Taiwan) and Panasonic (Japan) acceptable", "note": "Used for control, mission data upload and mission detail download."},
+    "Antenna": {"level": "NON-CRITICAL", "policy": "Permitted", "note": "No smart components. Omni/directional antennae in GDT may contain Chinese parts."},
+    "Joystick Controller": {"level": "NON-CRITICAL", "policy": "Permitted", "note": "No capability to Tx/Rx data."},
+    "Airframe": {"level": "NON-CRITICAL", "policy": "Permitted", "note": "Normally 3D printed in India."},
+    "Motor": {"level": "NON-CRITICAL", "policy": "Permitted", "note": "BLDC motors; some Indian manufacture, some Chinese origin."},
+    "Propeller": {"level": "NON-CRITICAL", "policy": "Permitted", "note": "3D printed in India/China."},
+    "ESC": {"level": "NON-CRITICAL", "policy": "Permitted", "note": "Some ESCs (e.g. Vertiq USA) contain STM32-series microcontrollers of Chinese-origin manufacture. Chipset cannot Tx/Rx data and embedded code cannot be remotely altered."},
+    "Battery": {"level": "NON-CRITICAL", "policy": "Permitted", "note": "Li-ion/Li-po/dry solid; cells manufactured in China."},
+    "Power Distribution Board": {"level": "NON-CRITICAL", "policy": "Permitted", "note": "DC-DC converters found to contain Chinese components."},
+    "Battery Charger": {"level": "NON-CRITICAL", "policy": "Permitted", "note": "Some manufactured in China."},
+    "Payload": {"level": "NON-CRITICAL", "policy": "Permitted", "note": "Certain image processors and encoders of Chinese origin."},
+    "Ethernet Switch": {"level": "CRITICAL", "policy": "Chinese origin not acceptable in Tx/Rx chain", "note": "Controller ICs found to be Shenzhen-sourced."}
+  },
+  "coo_marking_codes": [
+    {"code": "CHN", "country": "China", "site": "SSCP / SCCJ (China)", "chinese": true},
+    {"code": "PHL", "country": "Philippines", "site": "Amkor ATP (Philippines)", "chinese": false},
+    {"code": "SGP", "country": "Singapore", "site": "STATS ChipPAC (Singapore)", "chinese": false},
+    {"code": "MYS", "country": "Malaysia", "site": "ST Muar (Malaysia)", "chinese": false},
+    {"code": "TWN", "country": "Taiwan", "site": "ASE Kaohsiung (Taiwan)", "chinese": false},
+    {"code": "KOR", "country": "Republic of Korea", "site": "Amkor ATK (Korea)", "chinese": false},
+    {"code": "FRA", "country": "France", "site": "ST Crolles, Grenoble (France)", "chinese": false},
+    {"code": "ITA", "country": "Italy", "site": "ST Agrate, Catania (Italy)", "chinese": false},
+    {"code": "USA", "country": "USA", "site": "ST US Operations (USA)", "chinese": false},
+    {"code": "MLT", "country": "Malta", "site": "ST Malta (Malta)", "chinese": false}
+  ],
+  "chinese_territories": ["CHINA", "PRC", "PEOPLE'S REPUBLIC OF CHINA", "HONG KONG", "MACAU", "SHENZHEN", "CN", "CHN"],
+  "manufacturer_aliases": {
+    "ST MICROELECTRONICS": "STMICROELECTRONICS",
+    "ST MICRO": "STMICROELECTRONICS",
+    "STMICRO": "STMICROELECTRONICS",
+    "ANALOG DEVICES INC": "ANALOG DEVICES",
+    "ADI": "ANALOG DEVICES",
+    "TI": "TEXAS INSTRUMENTS",
+    "NVIDIA CORPORATION": "NVIDIA",
+    "REALTEK SEMICONDUCTOR": "REALTEK",
+    "MACRONIX (MXIC)": "MACRONIX",
+    "WESTERN DIGITAL": "SANDISK",
+    "HOBBYWING": "HOBBY WING",
+    "MEDIATEK INC": "MEDIATEK",
+    "SHENZHEN STCOMM": "STCOMM"
+  },
+  "approved_alternatives": {
+    "Flight Controller": ["CubePilot Cube Blue H7 (HX4-06154)", "ARK Electronics ARKV6X", "ModalAI VOXL 2 (M0054)", "Auterion Skynode X"],
+    "On Board Computer": ["NVIDIA Jetson Orin NX (900-13767-0000-0A0)", "Raspberry Pi 5 (RPI5-8GB-SINGLE)", "NextVision TRIP6"],
+    "GNSS Receiver": ["ARK TESEO GPS", "Septentrio mosaic-X5", "Locus Lock LEO100 GNSS-SDR", "CubePilot Here 4"],
+    "Radio Modem": ["Doodle Labs RM-2450-2J-XMC", "Silvus SC4200P", "Microhard pMDDL2450", "RFDesign MODEM-RFD900x"],
+    "GCS": ["Panasonic TOUGHBOOK G2 (FZ-G2)", "Freefly Pilot Pro 950-00136", "ModalAI Zorro Blue"],
+    "EO/IR Camera": ["Teledyne FLIR Hadron 640R", "NextVision Raptor", "Workswell WIRIS Pro"],
+    "ESC": ["ARK-4IN1-ESC", "ModalAI VOXL 4IN1 ESC (MDK-M0138-11-00)", "Ewing EAESC55v1.0"]
+  }
+}

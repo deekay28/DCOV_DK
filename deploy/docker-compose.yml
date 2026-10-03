@@ -1,0 +1,100 @@
+# DCOV field-hub stack: Caddy (TLS) -> API + PostgreSQL + static web client.
+#
+# Quick start:
+#   cp deploy/.env.example deploy/.env      # edit the secret key and passwords
+#   docker compose -f deploy/docker-compose.yml --env-file deploy/.env up -d --build
+#   docker compose -f deploy/docker-compose.yml exec backend \
+#     python -m app.cli create_admin --username admin --password '...'
+#
+# Verify:
+#   curl -sk https://localhost/health | jq        (-k: trusting Caddy's own CA
+#                                                    the first time - see below)
+#   open https://localhost                          web client
+#   open https://localhost/api/docs                 Swagger UI
+#
+# TLS: only the `proxy` service publishes ports to the host (80/443). backend
+# and web are reachable only from proxy, over the internal dcov-net network -
+# this is what makes DCOV_FORCE_HTTPS=true safe to set unconditionally below,
+# rather than something you have to remember to flip later. See
+# deploy/Caddyfile's header comment for how Caddy picks a certificate
+# strategy automatically depending on DCOV_DOMAIN. If you need to reach the
+# backend directly for debugging (bypassing the proxy), use
+# `docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.debug.yml up`.
+name: dcov
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-dcov}
+      POSTGRES_USER: ${POSTGRES_USER:-dcov}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in deploy/.env}
+    volumes:
+      - dcov-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-dcov}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks: [dcov-net]
+
+  backend:
+    build:
+      context: ../backend
+      dockerfile: ../deploy/Dockerfile.backend
+      args:
+        INSTALL_VISION: "${INSTALL_VISION:-false}"
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DCOV_DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-dcov}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-dcov}
+      DCOV_SECRET_KEY: ${DCOV_SECRET_KEY:?set DCOV_SECRET_KEY in deploy/.env}
+      DCOV_ENVIRONMENT: production
+      DCOV_CORS_ORIGINS: '["https://${DCOV_DOMAIN:-localhost}"]'
+      # Safe to hardcode true: backend is unreachable except through the
+      # proxy (no host port published below), and the proxy always terminates
+      # TLS in front of it - see the service comment at the top of this file.
+      DCOV_FORCE_HTTPS: "true"
+    volumes:
+      - dcov-uploads:/app/var/uploads
+      - dcov-reports:/app/var/reports
+      - dcov-backups:/app/var/backups
+    networks: [dcov-net]
+
+  web:
+    build:
+      context: ../web_demo
+      dockerfile: ../deploy/Dockerfile.web
+    restart: unless-stopped
+    depends_on: [backend]
+    networks: [dcov-net]
+
+  proxy:
+    image: caddy:2.8-alpine
+    restart: unless-stopped
+    depends_on: [backend, web]
+    environment:
+      DCOV_DOMAIN: ${DCOV_DOMAIN:-localhost}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - dcov-caddy-data:/data       # certificates (public ACME or internal CA) - persist across restarts
+      - dcov-caddy-config:/config
+    ports:
+      - "80:80"      # required even for HTTPS-only sites: ACME HTTP-01 challenge + HTTP->HTTPS redirect
+      - "443:443"
+      - "443:443/udp" # HTTP/3
+    networks: [dcov-net]
+
+networks:
+  dcov-net: {}
+
+volumes:
+  dcov-db:
+  dcov-uploads:
+  dcov-reports:
+  dcov-backups:
+  dcov-caddy-data:
+  dcov-caddy-config:
