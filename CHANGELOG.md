@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.1.0 (build 2) — 2026-10-04 — first Android APK (CI)
+
+- **Android release APK builds in CI** (run #11): `com.dcov.field` 1.1.0 (2),
+  minSdk 24, targetSdk 36, not debuggable, debug-key signed. Published as
+  GitHub pre-release `android-v1.1.0-build2-run11`.
+- **Fixed:** Android build failure on Flutter 3.47 (AGP 9 built-in-Kotlin vs
+  plugins still applying kotlin-android). Flutter pinned to 3.41.9;
+  `google_mlkit_text_recognition` capped `<0.17`.
+- **Fixed:** universal APK lost when the per-ABI build reused the output dir.
+- **Fixed:** APK secret scan false positive on Apache Tika's MIME table (now
+  requires a real PEM body) and scan step not failing the job on a hit.
+- CI: public annotations for build errors and APK facts, build-log artifact,
+  pre-release publishing, docs-only pushes skip the build.
+- Physical-device testing: **not performed** — `release/ANDROID_FIELD_TEST.md`.
+
 ## 1.1.0 (build 2) — 2026-10-03 — field-readiness pass
 
 Every item below was found by running the code (or, for the Flutter app, by
