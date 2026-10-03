@@ -197,6 +197,13 @@ PROGUARD = '''# DCOV: ML Kit text recognition ships the Latin model only; the op
 -dontwarn com.google.mlkit.vision.text.korean.**
 -keep class com.google.mlkit.** { *; }
 -keep class com.google.android.gms.internal.mlkit_vision_text_common.** { *; }
+# Compile-time-only annotations referenced by Tink (androidx.security-crypto,
+# used by flutter_secure_storage) and Guava-style libraries; absent at run
+# time by design. Play Core is referenced by Flutter's deferred-components
+# support, which DCOV does not use.
+-dontwarn com.google.errorprone.annotations.**
+-dontwarn javax.annotation.**
+-dontwarn com.google.android.play.core.**
 '''
 
 
