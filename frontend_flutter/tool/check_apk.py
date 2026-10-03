@@ -15,6 +15,7 @@ SDK; this script deliberately needs only the Python standard library.
 from __future__ import annotations
 
 import hashlib
+import os
 import re
 import sys
 import zipfile
@@ -33,6 +34,13 @@ REQUIRED = ["assets/flutter_assets/assets/data/components_seed.json",
             "assets/flutter_assets/assets/data/policy.json"]
 
 
+def redact(raw: bytes) -> str:
+    """Enough of the match to judge a false positive, never a whole secret."""
+    t = raw.decode("latin-1")
+    t = "".join(c if 32 <= ord(c) < 127 else "?" for c in t)
+    return t if len(t) <= 12 else t[:12] + "...(" + str(len(t)) + " chars)"
+
+
 def main(path: str) -> int:
     apk = Path(path)
     data = apk.read_bytes()
@@ -48,13 +56,17 @@ def main(path: str) -> int:
         for n in z.namelist():
             blob = z.read(n)
             for label, rx in PATTERNS.items():
-                if rx.search(blob):
-                    bad.append(f"{label} in {n}")
+                m = rx.search(blob)
+                if m:
+                    bad.append(f"{label} in {n}: {redact(m.group(0))}")
         abis = sorted({n.split('/')[1] for n in names if n.startswith('lib/') and n.count('/') >= 2})
         print(f"ABIs     {', '.join(abis) or 'none'}")
         print(f"entries  {len(names)}")
     if bad:
         print("\nFAILED:\n  " + "\n  ".join(bad))
+        if os.environ.get("GITHUB_ACTIONS"):
+            for b in bad[:9]:
+                print(f"::error title=check_apk {apk.name}::{b}")
         return 1
     print("secret scan: clean; offline catalogue + policy bundled")
     return 0
