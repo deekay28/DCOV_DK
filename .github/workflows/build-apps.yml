@@ -105,10 +105,14 @@ jobs:
         run: |
           set -o pipefail
           flutter build apk --release 2>&1 | tee ../build-universal.log
+          # Stash it now: the per-ABI build below reuses the same output folders.
+          mkdir -p ../dist
+          cp build/app/outputs/flutter-apk/app-release.apk ../dist/DCOV-Android-release.apk
       - name: Build per-ABI release APKs
         run: |
           set -o pipefail
           flutter build apk --release --split-per-abi 2>&1 | tee ../build-split.log
+          cp build/app/outputs/flutter-apk/app-*-release.apk ../dist/
 
       - name: Explain build failure (public annotations + job summary)
         if: failure()
@@ -126,31 +130,45 @@ jobs:
 
       - name: Inspect APKs (manifest, size, checksum, secret scan)
         run: |
-          set -e
-          AAPT2=$(ls -d "$ANDROID_HOME"/build-tools/*/ | sort -V | tail -1)aapt2
-          mkdir -p ../dist
-          cp build/app/outputs/flutter-apk/app-release.apk ../dist/DCOV-Android-release.apk
-          for f in build/app/outputs/flutter-apk/app-*-release.apk; do cp "$f" ../dist/; done
+          set -Eeuo pipefail
+          trap 'echo "::error title=Inspect APKs::failed at line $LINENO: $BASH_COMMAND"' ERR
+          ls -l ../dist
+          AAPT2=$(find "$ANDROID_HOME/build-tools" -name aapt2 -type f | sort -V | tail -1)
+          echo "aapt2: $AAPT2"
+          "$AAPT2" dump badging ../dist/DCOV-Android-release.apk > ../dist/badging.txt
+          (cd ../dist && sha256sum *.apk > SHA256SUMS.txt \
+             && sha256sum DCOV-Android-release.apk > DCOV-Android-release.sha256 \
+             && sha256sum -c DCOV-Android-release.sha256)
           {
             echo "Signing: $SIGNING"
             echo "Flutter: $(flutter --version | head -1)"
+            echo "Commit:  $GITHUB_SHA"
+            echo "Run:     $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
             echo
-            "$AAPT2" dump badging ../dist/DCOV-Android-release.apk | grep -E "^(package|sdkVersion|targetSdkVersion|uses-permission|application-label|native-code)"
+            grep -E "^(package|sdkVersion|targetSdkVersion|uses-permission|uses-feature|application-label|native-code|debuggable)" ../dist/badging.txt || true
             echo
             ls -l ../dist/*.apk
             echo
-            python3 tool/check_apk.py ../dist/DCOV-Android-release.apk
-          } | tee ../dist/APK_BUILD_INFO.txt
-          (cd ../dist && sha256sum *.apk > SHA256SUMS.txt && \
-           sha256sum DCOV-Android-release.apk > DCOV-Android-release.sha256 && cat SHA256SUMS.txt)
-          for f in ../dist/app-*-release.apk; do python3 tool/check_apk.py "$f"; done
-          { echo "## APK"; echo '```'; cat ../dist/APK_BUILD_INFO.txt; cat ../dist/SHA256SUMS.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+            cat ../dist/SHA256SUMS.txt
+          } > ../dist/APK_BUILD_INFO.txt
+          rm ../dist/badging.txt
+          { echo "## APK"; echo '```'; cat ../dist/APK_BUILD_INFO.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          cat ../dist/APK_BUILD_INFO.txt
 
+      - name: Secret scan + bundled-data check
+        run: |
+          rc=0
+          for f in ../dist/*.apk; do python3 tool/check_apk.py "$f" | tee -a ../dist/APK_BUILD_INFO.txt || rc=1; done
+          exit $rc
+
+      # Uploaded even if a check above failed, so the APK and the report can be
+      # inspected; the job (and the run) still shows FAILED in that case.
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: DCOV-Android-APK
           path: dist/
-          if-no-files-found: error
+          if-no-files-found: warn
 
   windows:
     runs-on: windows-latest
