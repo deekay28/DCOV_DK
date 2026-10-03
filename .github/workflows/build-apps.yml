@@ -15,6 +15,7 @@ name: Build apps (Android APK, Windows, iOS compile)
 on:
   push:
     branches: [main, master]
+    paths-ignore: ["**.md", "docs/**", "release/**"]
   pull_request:
   workflow_dispatch:
 
@@ -35,6 +36,8 @@ env:
 jobs:
   android:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write   # publish the test build as a GitHub pre-release
     timeout-minutes: 60
     defaults:
       run:
@@ -145,7 +148,8 @@ jobs:
             echo "Commit:  $GITHUB_SHA"
             echo "Run:     $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
             echo
-            grep -E "^(package|sdkVersion|targetSdkVersion|uses-permission|uses-feature|application-label|native-code|debuggable)" ../dist/badging.txt || true
+            grep -E "^(package|minSdkVersion|sdkVersion|targetSdkVersion|uses-permission|uses-feature|application-label:|native-code)" ../dist/badging.txt || true
+            if grep -q "^application-debuggable" ../dist/badging.txt; then echo "debuggable: YES"; else echo "debuggable: no"; fi
             echo
             ls -l ../dist/*.apk
             echo
@@ -176,6 +180,36 @@ jobs:
           name: DCOV-Android-APK
           path: dist/
           if-no-files-found: warn
+
+      # Artifacts need a GitHub sign-in and expire after 90 days, and the
+      # universal APK (~100 MB) is too large to commit. A pre-release gives a
+      # permanent, public download link per main-branch build. Only after every
+      # check above passed (success()), never for pull requests.
+      - name: Publish test build as a GitHub pre-release
+        if: success() && github.event_name != 'pull_request'
+        working-directory: .
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          VER=$(grep -E '^version:' frontend_flutter/pubspec.yaml | awk '{print $2}')
+          TAG="android-v${VER/+/-build}-run${GITHUB_RUN_NUMBER}"
+          {
+            echo "DCOV Android **test build** - debug-signed, not a store release."
+            echo
+            echo "- Version: \`$VER\` - commit \`${GITHUB_SHA::7}\` - [workflow run]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID)"
+            echo "- Install \`DCOV-Android-release.apk\` (universal) or the per-ABI APK for your phone (most phones: arm64-v8a)."
+            echo "- Each CI run is signed with a fresh debug key: uninstall the previous test build before installing this one."
+            echo "- Physical-device testing: see release/ANDROID_FIELD_TEST.md in the repo."
+            echo
+            echo '```'
+            cat dist/APK_BUILD_INFO.txt
+            echo '```'
+          } > release-notes.md
+          gh release create "$TAG" dist/*.apk dist/DCOV-Android-release.sha256 dist/SHA256SUMS.txt dist/APK_BUILD_INFO.txt \
+            --target "$GITHUB_SHA" --prerelease --title "DCOV Android $VER (CI run $GITHUB_RUN_NUMBER)" \
+            --notes-file release-notes.md
+          echo "::notice title=Published pre-release::$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/releases/tag/$TAG"
 
   windows:
     runs-on: windows-latest
