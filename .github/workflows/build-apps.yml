@@ -1,0 +1,159 @@
+name: Build apps (Android APK, Windows, iOS compile)
+
+# Builds the DCOV field app on GitHub's runners. Download the results from the
+# run page: Actions -> this workflow -> latest run -> "Artifacts".
+#
+# Release signing (optional): add repository secrets
+#   ANDROID_KEYSTORE_BASE64   base64 of your upload/release .jks
+#   ANDROID_KEYSTORE_PASSWORD
+#   ANDROID_KEY_ALIAS
+#   ANDROID_KEY_PASSWORD
+# Without them the release APK is signed with a throwaway debug key: it
+# installs and runs normally (fine for field testing and sharing with
+# testers) but a later build signed differently cannot update it in place.
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+
+env:
+  FLUTTER_CHANNEL: stable
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    defaults:
+      run:
+        working-directory: frontend_flutter
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: "17" }
+      - uses: subosito/flutter-action@v2
+        with: { channel: stable, cache: true }
+      - run: flutter --version
+
+      - name: Seed data matches the backend's
+        working-directory: .
+        run: diff -q data/components_seed.json frontend_flutter/assets/data/components_seed.json
+
+      - name: Generate platform folders and apply DCOV configuration
+        run: |
+          flutter create --org com.dcov --project-name dcov_field --platforms=android .
+          python3 tool/configure_platforms.py
+
+      - run: flutter pub get
+      - name: Analyze (errors fail the build; warnings are reported)
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings
+      - name: Unit + widget tests
+        run: flutter test
+
+      - name: Release signing (only if secrets are configured)
+        env:
+          KS_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KS_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASS: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if [ -n "$KS_B64" ]; then
+            echo "$KS_B64" | base64 -d > android/app/release.jks
+            printf 'storeFile=release.jks\nstorePassword=%s\nkeyAlias=%s\nkeyPassword=%s\n' \
+              "$KS_PASS" "$KEY_ALIAS" "$KEY_PASS" > android/key.properties
+            echo "SIGNING=release key" >> "$GITHUB_ENV"
+          else
+            echo "SIGNING=debug key (no release secrets configured)" >> "$GITHUB_ENV"
+          fi
+
+      - name: Build universal release APK
+        run: flutter build apk --release
+      - name: Build per-ABI release APKs
+        run: flutter build apk --release --split-per-abi
+
+      - name: Inspect APKs (manifest, size, checksum, secret scan)
+        run: |
+          set -e
+          AAPT2=$(ls -d "$ANDROID_HOME"/build-tools/*/ | sort -V | tail -1)aapt2
+          mkdir -p ../dist
+          cp build/app/outputs/flutter-apk/app-release.apk ../dist/DCOV-Android-release.apk
+          for f in build/app/outputs/flutter-apk/app-*-release.apk; do cp "$f" ../dist/; done
+          {
+            echo "Signing: $SIGNING"
+            echo "Flutter: $(flutter --version | head -1)"
+            echo
+            "$AAPT2" dump badging ../dist/DCOV-Android-release.apk | grep -E "^(package|sdkVersion|targetSdkVersion|uses-permission|application-label|native-code)"
+            echo
+            ls -l ../dist/*.apk
+            echo
+            python3 tool/check_apk.py ../dist/DCOV-Android-release.apk
+          } | tee ../dist/APK_BUILD_INFO.txt
+          (cd ../dist && sha256sum *.apk > SHA256SUMS.txt && \
+           sha256sum DCOV-Android-release.apk > DCOV-Android-release.sha256 && cat SHA256SUMS.txt)
+          for f in ../dist/app-*-release.apk; do python3 tool/check_apk.py "$f"; done
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: DCOV-Android-APK
+          path: dist/
+          if-no-files-found: error
+
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 60
+    defaults:
+      run:
+        working-directory: frontend_flutter
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - uses: subosito/flutter-action@v2
+        with: { channel: stable, cache: true }
+      - name: Generate platform folder and configure
+        run: |
+          flutter config --enable-windows-desktop
+          flutter create --org com.dcov --project-name dcov_field --platforms=windows .
+          python tool/configure_platforms.py
+      - run: flutter pub get
+      - run: flutter build windows --release
+      - name: Package
+        shell: pwsh
+        run: |
+          $out = "build/windows/x64/runner/Release"
+          Compress-Archive -Path "$out/*" -DestinationPath "../DCOV-Windows-release.zip"
+          Get-FileHash ../DCOV-Windows-release.zip -Algorithm SHA256 | Format-List
+      - uses: actions/upload-artifact@v4
+        with:
+          name: DCOV-Windows-release
+          path: DCOV-Windows-release.zip
+          if-no-files-found: error
+
+  ios:
+    runs-on: macos-latest
+    timeout-minutes: 60
+    defaults:
+      run:
+        working-directory: frontend_flutter
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with: { channel: stable, cache: true }
+      - name: Generate platform folder and configure
+        run: |
+          flutter create --org com.dcov --project-name dcov_field --platforms=ios .
+          python3 tool/configure_platforms.py
+          flutter pub get
+          flutter build ios --config-only --no-codesign
+          python3 tool/configure_platforms.py   # Podfile now exists: set iOS 15.5
+      - name: Compile for device without code signing
+        run: flutter build ios --release --no-codesign
+      - name: Package (unsigned - not installable, proves the iOS build compiles)
+        run: |
+          cd build/ios/iphoneos && zip -qr ../../../../DCOV-iOS-unsigned-Runner.app.zip Runner.app
+      - uses: actions/upload-artifact@v4
+        with:
+          name: DCOV-iOS-unsigned-compile-check
+          path: DCOV-iOS-unsigned-Runner.app.zip
+          if-no-files-found: error
