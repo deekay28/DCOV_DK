@@ -29,6 +29,7 @@ env:
   # failed; Windows/iOS built). 3.41.x is the last stable on AGP 8.11 +
   # KGP 2.2.20, where every plugin DCOV uses builds as published. Move this
   # forward once file_picker and share_plus ship AGP 9 builds.
+  # Keep in sync with the three flutter-version inputs below.
   FLUTTER_VERSION: "3.41.9"
 
 jobs:
@@ -43,7 +44,10 @@ jobs:
       - uses: actions/setup-java@v4
         with: { distribution: temurin, java-version: "17" }
       - uses: subosito/flutter-action@v2
-        with: { channel: stable, flutter-version: ${{ env.FLUTTER_VERSION }}, cache: true }
+        with:
+          channel: stable
+          flutter-version: "3.41.9"
+          cache: true
       - run: flutter --version
 
       - name: Seed data matches the backend's
@@ -159,7 +163,10 @@ jobs:
       - uses: actions/setup-python@v5
         with: { python-version: "3.12" }
       - uses: subosito/flutter-action@v2
-        with: { channel: stable, flutter-version: ${{ env.FLUTTER_VERSION }}, cache: true }
+        with:
+          channel: stable
+          flutter-version: "3.41.9"
+          cache: true
       - name: Generate platform folder and configure
         run: |
           flutter config --enable-windows-desktop
@@ -188,7 +195,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2
-        with: { channel: stable, flutter-version: ${{ env.FLUTTER_VERSION }}, cache: true }
+        with:
+          channel: stable
+          flutter-version: "3.41.9"
+          cache: true
       - name: Generate platform folder and configure
         run: |
           flutter create --org com.dcov --project-name dcov_field --platforms=ios .
