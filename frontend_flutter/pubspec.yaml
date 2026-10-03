@@ -1,0 +1,75 @@
+name: dcov_field
+description: DCOV - Drone Component Origin Verification, field client.
+publish_to: "none"
+version: 1.1.0+2
+
+environment:
+  sdk: ">=3.4.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+
+  # networking
+  http: ^1.2.2
+  http_parser: ^4.0.2        # MediaType for the photo upload (server rejects non-image/* parts)
+
+  # local persistence: token, settings, offline scan queue. Deliberately
+  # shared_preferences (a JSON blob), not a SQL database, for non-sensitive
+  # state - see the class comment in lib/services/local_store.dart. Session
+  # tokens specifically go through flutter_secure_storage below, not
+  # shared_preferences - a 7-day refresh token is a real credential and
+  # shared_preferences is an unencrypted file on every platform it supports.
+  shared_preferences: ^2.3.3
+  flutter_secure_storage: ^9.2.2
+
+  # scanning
+  mobile_scanner: ^7.0.0      # barcode/QR - Android (ML Kit), iOS/macOS (Apple Vision), web. No Windows camera support.
+  image_picker: ^1.1.2        # chip photo capture - all platforms incl. web/desktop file picker
+  # On-device OCR (Android/iOS), Latin model bundled in the app - works with
+  # no network. Range, not caret: let pub pick the newest release compatible
+  # with the Flutter SDK doing the build.
+  google_mlkit_text_recognition: ">=0.15.0 <1.0.0"
+
+  # device capability
+  vibration: ^2.0.1           # Android/iOS only - no-ops harmlessly elsewhere
+  connectivity_plus: ^6.1.0
+
+  # utility
+  intl: ^0.19.0
+  uuid: ^4.5.1
+
+  # report download/share (Reports screen - PDF/XLSX/CSV bytes from the API
+  # need to land somewhere the user can actually open them). path_provider
+  # finds a writable temp directory per platform; share_plus hands the saved
+  # file to the OS share sheet (Save to Files, email, AirDrop, etc.) -
+  # supported on Android/iOS/Windows/macOS/Linux/web.
+  path_provider: ^2.1.4
+  # Pinned to the ShareParams/SharePlus.instance API (the static
+  # Share.shareXFiles() this code briefly used is deprecated as of the
+  # package version current when this was written - caught by checking
+  # pub.dev directly rather than assumed from training data, since a
+  # third-party package API is exactly the kind of thing that goes stale).
+  # ^13.1.0 conflicted with file_picker's win32 constraint in a real
+  # `flutter pub get` run - pub's own solver suggested this version, which
+  # resolves cleanly and still has the ShareParams API this code uses.
+  share_plus: ^12.0.2
+  # Used by import_screen.dart to pick an .xlsx/.csv/.json/.sql file. Pinned
+  # tightly (not a wide caret range) because this package's top-level API
+  # changed shape across major versions (FilePickerResult? wrapper vs. a
+  # bare List<PlatformFile> return) - see import_screen.dart's own comment
+  # at the call site for exactly what to change if `flutter pub get`
+  # resolves something newer than this and `flutter analyze` complains.
+  file_picker: ^10.3.9
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/data/components_seed.json
+    - assets/data/policy.json
