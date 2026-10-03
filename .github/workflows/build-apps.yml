@@ -19,7 +19,17 @@ on:
   workflow_dispatch:
 
 env:
-  FLUTTER_CHANNEL: stable
+  # Pinned, not "latest stable". Flutter 3.44+ generates Android projects on
+  # AGP 9 with android.builtInKotlin=false, and on that toolchain DCOV's
+  # plugins split two ways: google_mlkit_text_recognition >=0.17 / commons
+  # >=0.13 REQUIRE built-in Kotlin (no kotlin-android, top-level kotlin{}),
+  # while file_picker 10 / share_plus 12 still apply kotlin-android and
+  # REQUIRE it off. No flag value satisfies both - the most likely cause of
+  # the Android build failure in run #2 (3.47.x; analyze/test passed, Gradle
+  # failed; Windows/iOS built). 3.41.x is the last stable on AGP 8.11 +
+  # KGP 2.2.20, where every plugin DCOV uses builds as published. Move this
+  # forward once file_picker and share_plus ship AGP 9 builds.
+  FLUTTER_VERSION: "3.41.9"
 
 jobs:
   android:
@@ -33,7 +43,7 @@ jobs:
       - uses: actions/setup-java@v4
         with: { distribution: temurin, java-version: "17" }
       - uses: subosito/flutter-action@v2
-        with: { channel: stable, cache: true }
+        with: { channel: stable, flutter-version: ${{ env.FLUTTER_VERSION }}, cache: true }
       - run: flutter --version
 
       - name: Seed data matches the backend's
@@ -47,9 +57,15 @@ jobs:
 
       - run: flutter pub get
       - name: Analyze (errors fail the build; warnings are reported)
-        run: flutter analyze --no-fatal-infos --no-fatal-warnings
+        run: |
+          set -o pipefail
+          flutter analyze --no-fatal-infos --no-fatal-warnings 2>&1 | tee ../analyze.log
+          { echo "## flutter analyze"; echo '```'; tail -40 ../analyze.log; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
       - name: Unit + widget tests
-        run: flutter test
+        run: |
+          set -o pipefail
+          flutter test 2>&1 | tee ../test.log
+          { echo "## flutter test"; echo '```'; tail -5 ../test.log; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Release signing (only if secrets are configured)
         env:
@@ -67,10 +83,42 @@ jobs:
             echo "SIGNING=debug key (no release secrets configured)" >> "$GITHUB_ENV"
           fi
 
+      - name: Toolchain report (Flutter, Gradle, AGP, Kotlin, JDK)
+        run: |
+          flutter doctor -v || true
+          {
+            echo "## Toolchain"
+            echo '```'
+            flutter --version
+            java -version 2>&1 | head -1
+            grep -h distributionUrl android/gradle/wrapper/gradle-wrapper.properties || true
+            grep -hE 'com.android.application|org.jetbrains.kotlin.android' android/settings.gradle* || true
+            grep -hE 'minSdk|targetSdk|compileSdk|ndkVersion|applicationId|versionCode|versionName' android/app/build.gradle* || true
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Build universal release APK
-        run: flutter build apk --release
+        run: |
+          set -o pipefail
+          flutter build apk --release 2>&1 | tee ../build-universal.log
       - name: Build per-ABI release APKs
-        run: flutter build apk --release --split-per-abi
+        run: |
+          set -o pipefail
+          flutter build apk --release --split-per-abi 2>&1 | tee ../build-split.log
+
+      - name: Explain build failure (public annotations + job summary)
+        if: failure()
+        working-directory: .
+        run: python3 frontend_flutter/tool/report_build_failure.py build-universal.log build-split.log
+      - name: Upload build logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: DCOV-Android-build-logs
+          path: |
+            build-*.log
+            frontend_flutter/build/app/outputs/mapping/release/missing_rules.txt
+          if-no-files-found: ignore
 
       - name: Inspect APKs (manifest, size, checksum, secret scan)
         run: |
@@ -92,6 +140,7 @@ jobs:
           (cd ../dist && sha256sum *.apk > SHA256SUMS.txt && \
            sha256sum DCOV-Android-release.apk > DCOV-Android-release.sha256 && cat SHA256SUMS.txt)
           for f in ../dist/app-*-release.apk; do python3 tool/check_apk.py "$f"; done
+          { echo "## APK"; echo '```'; cat ../dist/APK_BUILD_INFO.txt; cat ../dist/SHA256SUMS.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
 
       - uses: actions/upload-artifact@v4
         with:
@@ -110,7 +159,7 @@ jobs:
       - uses: actions/setup-python@v5
         with: { python-version: "3.12" }
       - uses: subosito/flutter-action@v2
-        with: { channel: stable, cache: true }
+        with: { channel: stable, flutter-version: ${{ env.FLUTTER_VERSION }}, cache: true }
       - name: Generate platform folder and configure
         run: |
           flutter config --enable-windows-desktop
@@ -139,7 +188,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2
-        with: { channel: stable, cache: true }
+        with: { channel: stable, flutter-version: ${{ env.FLUTTER_VERSION }}, cache: true }
       - name: Generate platform folder and configure
         run: |
           flutter create --org com.dcov --project-name dcov_field --platforms=ios .
