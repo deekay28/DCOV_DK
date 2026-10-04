@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.1.1 (build 3) — 2026-10-04 — fixes from the first phone test
+
+First physical-device test (Android phone, offline, not signed in): app
+installs and launches; offline marking verification against the bundled
+203-record catalogue works (typed "TAIMAG" → prefix match 88% → YELLOW).
+
+- **Fixed:** the verdict sub-line was chosen by result category only, so an
+  approximate match to a part with a *documented* origin (TAIMAG → Taiwan,
+  technical-inspection worksheet) said "its origin was never established".
+  Now explains the actual reason (identity unconfirmed / OEM-only record /
+  low confidence). Same fix in the web demo. Regression test added.
+- **Added:** Settings → **UPDATE CATALOGUE NOW** with record count and last
+  sync time; explains that updates come from the signed-in server.
+- **Changed:** TEST CONNECTION now reads **CONNECTED** / **CONNECTION FAILED**
+  followed by the details (Phase 2 brief wording).
+
 ## 1.1.0 (build 2) — 2026-10-04 — first Android APK (CI)
 
 - **Android release APK builds in CI** (run #11): `com.dcov.field` 1.1.0 (2),
