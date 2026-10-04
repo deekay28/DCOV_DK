@@ -54,6 +54,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
+  bool _updatingCatalogue = false;
+  String? _catalogueResult;
+
+  Future<void> _updateCatalogue() async {
+    setState(() { _updatingCatalogue = true; _catalogueResult = null; });
+    final r = await widget.app.updateCatalogueNow();
+    if (mounted) setState(() { _updatingCatalogue = false; _catalogueResult = r; });
+  }
+
   Future<void> _testUrl() async {
     setState(() { _testing = true; _testResult = null; });
     final r = await widget.app.testServer(_url.text);
@@ -124,6 +133,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
               _row('Catalogue source', app.catalog.source == 'server'
                   ? 'Synced from server' : app.catalog.source == 'server_cache'
                   ? 'Last server sync (cached on device)' : 'Bundled with app'),
+              _row('Catalogue records', '${app.catalog.count}'
+                  '${app.catalog.loadedAt != null && app.catalog.source != 'bundled' ? ' - synced ${app.catalog.loadedAt!.toLocal().toString().substring(0, 16)}' : ''}'),
+              const SizedBox(height: 6),
+              OutlinedButton.icon(
+                onPressed: _updatingCatalogue ? null : _updateCatalogue,
+                icon: _updatingCatalogue
+                    ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
+                    : const Icon(Icons.sync, size: 16),
+                label: const Text('UPDATE CATALOGUE NOW')),
+              if (_catalogueResult != null) Padding(padding: const EdgeInsets.only(top: 6),
+                  child: Text(_catalogueResult!, style: const TextStyle(fontSize: 12)))
+              else if (!app.isLoggedIn) Padding(padding: const EdgeInsets.only(top: 6),
+                  child: Text('Needs a signed-in server connection. Offline, the app uses the '
+                      'catalogue bundled with it or the last one downloaded.',
+                      style: TextStyle(fontSize: 11.5, color: t.ink2))),
               const SizedBox(height: 10),
               Text('Server address', style: TextStyle(fontSize: 11.5, letterSpacing: 1,
                   color: t.silk, fontFamily: 'RobotoMono')),
