@@ -1,5 +1,31 @@
 # Changelog
 
+## 1.2.0 (build 4) — 2026-10-04 — offline mode, part 1
+
+Goal: run DCOV with no server and no network at all.
+
+- **Added: offline accounts on the device.** First use creates the device's
+  administrator; administrators add inspectors / database managers / viewers,
+  change roles, reset passwords (forced change at next sign-in), disable or
+  remove accounts. Passwords are never stored: PBKDF2-HMAC-SHA256 (60 000
+  iterations, random 16-byte salt) in OS-keystore-backed secure storage;
+  5 wrong attempts lock the account for 60 s; the last administrator cannot be
+  removed. Scans are attributed to the signed-in device user.
+- **Added: catalogue import from a file on the phone** (.xlsx, .csv/.tsv,
+  .json): header detection, the server importer's column synonyms
+  ("Name of Item", "Chip No", "Mfr", "COO"…), the same validation and origin
+  rule (unknown country → UNKNOWN, never non-Chinese), preview with new /
+  updated / rejected rows, **origin changes must be explicitly confirmed**,
+  MERGE or REPLACE, persisted across restarts, one-step **UNDO**, import log
+  with file SHA-256. A later server sync replaces a device import (and says so).
+- **Fixed (significant, offline only):** 116 of the 203 bundled records have no
+  chip number; the app's Dart engine indexed them under an empty key
+  (`chip_number ?? part_number` does not skip ""), so typing their part number
+  found nothing offline. JS engine and server were correct. Regression test
+  checks every bundled record is found by its own marking.
+- CI: `flutter analyze` errors and `flutter test` failures are published as
+  file/line annotations on the public run page.
+
 ## 1.1.1 (build 3) — 2026-10-04 — fixes from the first phone test
 
 First physical-device test (Android phone, offline, not signed in): app
