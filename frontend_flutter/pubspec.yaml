@@ -1,7 +1,7 @@
 name: dcov_field
 description: DCOV - Drone Component Origin Verification, field client.
 publish_to: "none"
-version: 1.1.1+3
+version: 1.2.0+4
 
 environment:
   sdk: ">=3.4.0 <4.0.0"
@@ -36,6 +36,14 @@ dependencies:
   # device capability
   vibration: ^2.0.1           # Android/iOS only - no-ops harmlessly elsewhere
   connectivity_plus: ^6.1.0
+
+  # offline mode (1.2.0): PBKDF2 password hashing for device accounts
+  # (lib/services/local_accounts.dart) and .xlsx reading for on-device
+  # catalogue import (lib/services/catalog_import.dart). Ranges, not carets:
+  # both APIs used (Hmac/sha256/sha1; ZipDecoder/ArchiveFile.content) are
+  # stable across these majors.
+  crypto: ">=3.0.3 <4.0.0"
+  archive: ">=3.6.1 <5.0.0"
 
   # utility
   intl: ^0.19.0
