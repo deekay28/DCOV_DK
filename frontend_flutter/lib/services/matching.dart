@@ -177,6 +177,17 @@ class MatchResult {
   });
 }
 
+/// chip_number if present, else part_number. Must treat an EMPTY chip_number
+/// as absent (like Python `or` / JS `||`): `??` only skips null, and 116 of
+/// the 203 bundled rows carry chip_number "" - they were indexed under an
+/// empty key and could not be found by marking on the device (server-synced
+/// rows were unaffected because the server sends search_key). Found while
+/// building offline mode, 2026-10-04.
+String _keyField(Map<String, dynamic> c) {
+  final chip = c['chip_number']?.toString().trim() ?? '';
+  return chip.isNotEmpty ? chip : (c['part_number']?.toString() ?? '');
+}
+
 class ComponentIndex {
   final List<ComponentRow> rows;
   final Map<String, List<ComponentRow>> _byKey = {};
@@ -190,7 +201,7 @@ class ComponentIndex {
       final c = rows[i];
       final key = (c['search_key'] as String?)?.isNotEmpty == true
           ? c['search_key'] as String
-          : normalizeMarking((c['chip_number'] ?? c['part_number'])?.toString());
+          : normalizeMarking(_keyField(c));
       c['search_key'] = key;
       if (key.isNotEmpty) {
         _byKey.putIfAbsent(key, () => []).add(c);
@@ -353,7 +364,7 @@ class ComponentMatcher {
     final cands = <Candidate>[];
     for (final comp in index.candidates(key, limit: 200)) {
       final ck = (comp['search_key'] as String?) ??
-          normalizeMarking((comp['chip_number'] ?? comp['part_number'])?.toString());
+          normalizeMarking(_keyField(comp));
       if (ck.isEmpty) continue;
       final s = similarity(key, ck);
       if (s >= 55) cands.add(Candidate(comp, s));

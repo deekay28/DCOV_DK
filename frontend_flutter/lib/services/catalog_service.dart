@@ -19,7 +19,10 @@ class CatalogService {
 
   ComponentIndex get index => _index;
   DateTime? get loadedAt => _loadedAt;
-  String get source => _source; // 'bundled' | 'server' | 'server_cache'
+  String get source => _source; // 'bundled' | 'server' | 'server_cache' | 'device_import'
+  Map<String, dynamic>? _importInfo;
+  /// Set when the active catalogue was imported from a file on this device.
+  Map<String, dynamic>? get importInfo => _importInfo;
   Map<String, dynamic> get policy => _policy;
   int get count => _index.rows.length;
 
@@ -51,7 +54,9 @@ class CatalogService {
       final rows = (j['rows'] as List).cast<Map<String, dynamic>>();
       if (rows.isEmpty) return false;
       _index = ComponentIndex(rows);
-      _source = 'server_cache';
+      final imported = j['source'] == 'device_import';
+      _source = imported ? 'device_import' : 'server_cache';
+      _importInfo = imported ? (j['import'] as Map?)?.cast<String, dynamic>() : null;
       _loadedAt = DateTime.tryParse(j['synced_at']?.toString() ?? '') ?? DateTime.now();
       return true;
     } catch (_) {
@@ -74,17 +79,101 @@ class CatalogService {
     if (rows.isEmpty) return 0;
     _index = ComponentIndex(rows);
     _source = 'server';
+    _importInfo = null;
     _loadedAt = DateTime.now();
     try {
       final f = await _cacheFile();
       if (f != null) {
         final tmp = File('${f.path}.tmp');
         await tmp.writeAsString(jsonEncode(
-            {'synced_at': _loadedAt!.toIso8601String(), 'rows': rows}), flush: true);
+            {'source': 'server', 'synced_at': _loadedAt!.toIso8601String(), 'rows': rows}), flush: true);
         await tmp.rename(f.path); // atomic replace: never a half-written cache
       }
     } catch (_) {/* cache is an optimisation; the in-memory index is current */}
     return rows.length;
+  }
+
+  // ------------------------------------------------ on-device import -- //
+  Future<File?> _sideFile(String name) async {
+    if (kIsWeb) return null;
+    final dir = await getApplicationSupportDirectory();
+    return File('${dir.path}/$name');
+  }
+
+  Future<void> _writeAtomic(File f, String text) async {
+    final tmp = File('${f.path}.tmp');
+    await tmp.writeAsString(text, flush: true);
+    await tmp.rename(f.path);
+  }
+
+  /// Makes [rows] the active catalogue (persisted, survives restarts). The
+  /// catalogue it replaces is kept as a one-step backup for [rollbackDeviceImport].
+  Future<void> applyDeviceImport(List<Map<String, dynamic>> rows, Map<String, dynamic> info) async {
+    final cache = await _cacheFile();
+    final backup = await _sideFile('dcov_catalogue_backup.json');
+    if (cache == null || backup == null) throw StateError('No writable storage on this platform.');
+    if (await cache.exists()) {
+      await _writeAtomic(backup, await cache.readAsString());
+    } else {
+      await _writeAtomic(backup, jsonEncode({'bundled': true}));
+    }
+    final now = DateTime.now();
+    await _writeAtomic(cache, jsonEncode(
+        {'source': 'device_import', 'synced_at': now.toIso8601String(), 'import': info, 'rows': rows}));
+    _index = ComponentIndex(rows);
+    _source = 'device_import';
+    _importInfo = info;
+    _loadedAt = now;
+    await _log({...info, 'action': 'import', 'at': now.toIso8601String(), 'rows_after': rows.length});
+  }
+
+  Future<bool> canRollback() async {
+    final b = await _sideFile('dcov_catalogue_backup.json');
+    return b != null && await b.exists();
+  }
+
+  /// Restores the catalogue that was active before the last device import.
+  Future<void> rollbackDeviceImport(String by) async {
+    final cache = await _cacheFile();
+    final backup = await _sideFile('dcov_catalogue_backup.json');
+    if (cache == null || backup == null || !await backup.exists()) {
+      throw StateError('Nothing to undo.');
+    }
+    final j = jsonDecode(await backup.readAsString()) as Map<String, dynamic>;
+    if (j['bundled'] == true) {
+      if (await cache.exists()) await cache.delete();
+      await loadBundled();
+      _importInfo = null;
+    } else {
+      await _writeAtomic(cache, jsonEncode(j));
+      await loadCached();
+    }
+    await backup.delete();
+    await _log({'action': 'undo', 'by': by, 'at': DateTime.now().toIso8601String(),
+        'rows_after': _index.rows.length, 'restored_source': _source});
+  }
+
+  Future<void> _log(Map<String, dynamic> entry) async {
+    try {
+      final f = await _sideFile('dcov_import_log.json');
+      if (f == null) return;
+      final list = await importLog();
+      list.insert(0, entry);
+      await _writeAtomic(f, jsonEncode(list.take(200).toList()));
+    } catch (_) {/* the log is informative; never block an import on it */}
+  }
+
+  /// Newest first.
+  Future<List<Map<String, dynamic>>> importLog() async {
+    try {
+      final f = await _sideFile('dcov_import_log.json');
+      if (f == null || !await f.exists()) return [];
+      return (jsonDecode(await f.readAsString()) as List)
+          .map((e) => (e as Map).cast<String, dynamic>())
+          .toList();
+    } catch (_) {
+      return [];
+    }
   }
 
   Map<String, int> get counts {

@@ -82,6 +82,12 @@ class LocalStore {
       ? _secure.delete(key: _kAppLockPin)
       : _secure.write(key: _kAppLockPin, value: pin);
 
+  // ---- generic secrets (offline accounts, offline session) - secure storage.
+  Future<String?> readSecret(String key) => _secure.read(key: key);
+  Future<void> writeSecret(String key, String? value) => value == null
+      ? _secure.delete(key: key)
+      : _secure.write(key: key, value: value);
+
   int get autoLockMinutes => _prefs.getInt(_kAutoLockMinutes) ?? 15;
   Future<void> setAutoLockMinutes(int minutes) => _prefs.setInt(_kAutoLockMinutes, minutes);
 

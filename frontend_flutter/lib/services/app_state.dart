@@ -1,10 +1,13 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:uuid/uuid.dart';
 import '../models/models.dart';
 import 'api_client.dart';
+import 'catalog_import.dart';
 import 'catalog_service.dart';
+import 'local_accounts.dart';
 import 'local_store.dart';
 import 'marking.dart';
 import 'matching.dart';
@@ -66,6 +69,12 @@ class AppState extends ChangeNotifier {
   final _uuid = const Uuid();
 
   Session? session;
+
+  /// Offline (device-only) account in use when there is no server session.
+  /// See local_accounts.dart for what this does and does not protect.
+  LocalUser? localUser;
+  late final LocalAccounts localAccounts = LocalAccounts(store.readSecret, store.writeSecret);
+  static const _kLocalSession = 'dcov.local_session.v1';
   /// True only when the backend actually answered /health recently - not
   /// merely "the phone has Wi-Fi". Every screen that calls the API keys off
   /// this; a phone on Wi-Fi with the server down is OFFLINE for our purposes.
@@ -189,6 +198,18 @@ class AppState extends ChangeNotifier {
       session = null; // unreadable secure storage (e.g. restored backup): sign in again
     }
     if (session != null) api.accessToken = session!.accessToken;
+    await localAccounts.load();
+    try {
+      final raw = await store.readSecret(_kLocalSession);
+      final u = raw == null ? null : LocalUser.fromJson(jsonDecode(raw) as Map<String, dynamic>);
+      final rec = u == null ? null : localAccounts.find(u.username);
+      // The account may have been disabled or deleted since this session began.
+      localUser = (rec != null && !rec.disabled)
+          ? LocalUser(rec.username, rec.role, mustChangePassword: rec.mustChangePassword)
+          : null;
+    } catch (_) {
+      localUser = null;
+    }
     await _loadAppLockState();
     _armInactivityTimer();
 
@@ -283,7 +304,14 @@ class AppState extends ChangeNotifier {
     try {
       if (!await ensureFreshToken()) return;
       final before = catalog.counts['total'] ?? 0;
+      final wasDeviceImport = catalog.source == 'device_import';
       final n = await catalog.refreshFromServer(api);
+      if (n > 0 && wasDeviceImport) {
+        pushNotification(level: 'warning', title: 'Server catalogue now in use',
+            body: 'The catalogue imported on this device was replaced by the server\'s '
+                '($n components). The server is authoritative when signed in.',
+            route: 'dashboard');
+      }
       lastError = null;
       if (n > 0) {
         // Row-count changed is a coarse proxy for "the catalogue changed" -
@@ -327,6 +355,104 @@ class AppState extends ChangeNotifier {
     } catch (e) {
       return 'UPDATE FAILED - $e. Keeping the current catalogue.';
     }
+  }
+
+  // ------------------------------------------- offline accounts & import -- //
+  /// Who scans are attributed to: the server user if signed in, else the
+  /// offline account, else nobody (anonymous offline use).
+  String get currentOperator => session?.username ?? localUser?.username ?? '';
+  bool get isLocalSignedIn => session == null && localUser != null;
+  String get currentRole => session?.role ?? localUser?.role ?? '';
+  bool get canImportOnDevice =>
+      const {'administrator', 'database_manager'}.contains(currentRole);
+  bool get canManageLocalUsers => localUser?.canManageUsers ?? false;
+
+  Future<void> _persistLocalUser() =>
+      store.writeSecret(_kLocalSession, localUser == null ? null : jsonEncode(localUser!.toJson()));
+
+  Future<LocalUser> localSignIn(String username, String password) async {
+    final u = await localAccounts.authenticate(username, password);
+    localUser = u;
+    await _persistLocalUser();
+    recordActivity();
+    notifyListeners();
+    return u;
+  }
+
+  /// First run with no server: creates the device's first administrator.
+  Future<LocalUser> createFirstLocalAdmin(String username, String password) async {
+    if (localAccounts.hasAccounts) {
+      throw LocalAuthException('This device already has offline accounts - sign in instead.');
+    }
+    await localAccounts.create(username, password, 'administrator');
+    return localSignIn(username, password);
+  }
+
+  Future<void> changeLocalPassword(String current, String next) async {
+    final u = localUser;
+    if (u == null) throw LocalAuthException('Not signed in on this device.');
+    await localAccounts.changePassword(u.username, current, next);
+    localUser = LocalUser(u.username, u.role);
+    await _persistLocalUser();
+    notifyListeners();
+  }
+
+  Future<void> localSignOut() async {
+    localUser = null;
+    await _persistLocalUser();
+    notifyListeners();
+  }
+
+  /// Refreshes [localUser] after an admin edits accounts (role, disable).
+  Future<void> refreshLocalUser() async {
+    final u = localUser;
+    if (u == null) return;
+    final rec = localAccounts.find(u.username);
+    localUser = (rec == null || rec.disabled)
+        ? null
+        : LocalUser(rec.username, rec.role, mustChangePassword: rec.mustChangePassword);
+    await _persistLocalUser();
+    notifyListeners();
+  }
+
+  Future<ImportPreview> previewDeviceImport(String filename, List<int> bytes) {
+    if (!canImportOnDevice) {
+      throw LocalAuthException('Only an administrator or database manager can import a catalogue.');
+    }
+    final current = catalog.index.rows.map((r) => Map<String, dynamic>.from(r)).toList();
+    return compute(_previewEntry, (filename, bytes, current));
+  }
+
+  Future<void> applyDeviceImport(ImportPreview p, {required bool replace}) async {
+    if (!canImportOnDevice) {
+      throw LocalAuthException('Only an administrator or database manager can import a catalogue.');
+    }
+    final rows = p.resultRows(catalog.index.rows, replace: replace);
+    final info = <String, dynamic>{
+      'filename': p.filename, 'sha256': p.sha256, 'format': p.format,
+      'mode': replace ? 'replace' : 'merge', 'by': currentOperator,
+      'new': p.newCount, 'updated': p.updatedCount, 'unchanged': p.unchangedCount,
+      'rejected': p.errors.map((e) => e.row).toSet().length,
+      'origin_flips': p.originFlips.length,
+      'removed': replace ? p.missingFromFile : 0,
+    };
+    await catalog.applyDeviceImport(rows, info);
+    pushNotification(level: 'info', title: 'Catalogue imported on this device',
+        body: '${p.filename}: ${rows.length} components now active '
+            '(${p.newCount} new, ${p.updatedCount} updated'
+            '${replace && p.missingFromFile > 0 ? ', ${p.missingFromFile} removed' : ''}).',
+        route: 'dashboard');
+    notifyListeners();
+  }
+
+  Future<void> undoDeviceImport() async {
+    if (!canImportOnDevice) {
+      throw LocalAuthException('Only an administrator or database manager can undo an import.');
+    }
+    await catalog.rollbackDeviceImport(currentOperator);
+    pushNotification(level: 'info', title: 'Catalogue import undone',
+        body: '${catalog.count} components active (${catalog.source}).', route: 'dashboard');
+    notifyListeners();
   }
 
   // -------------------------------------------------------- notifications -- //
@@ -534,7 +660,7 @@ class AppState extends ChangeNotifier {
     }
 
     final clientUuid = _uuid.v4();
-    final operator = session?.username ?? '';
+    final operator = currentOperator;
     var status = ScanStatus.localOnly;
     Verdict? serverVerdict;
     var scanId = '';
@@ -727,3 +853,6 @@ class AppState extends ChangeNotifier {
     super.dispose();
   }
 }
+
+ImportPreview _previewEntry((String, List<int>, List<Map<String, dynamic>>) a) =>
+    buildImportPreview(a.$1, a.$2, a.$3);
