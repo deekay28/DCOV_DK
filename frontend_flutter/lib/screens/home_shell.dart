@@ -8,6 +8,7 @@ import 'dashboard_screen.dart';
 import 'history_screen.dart';
 import 'import_screen.dart';
 import 'inspections_screen.dart';
+import 'local_users_screen.dart';
 import 'login_screen.dart';
 import 'notifications_screen.dart';
 import 'reports_screen.dart';
@@ -67,7 +68,7 @@ class _HomeShellState extends State<HomeShell> {
           // buttons overflowed the app bar.
           _pill(context,
               '${app.online ? 'ONLINE' : 'OFFLINE'}${app.pendingSyncCount > 0 ? ' \u00b7 ${app.pendingSyncCount} PENDING' : ''}'
-              '${MediaQuery.of(context).size.width >= 600 ? (app.catalog.source == 'bundled' ? ' \u00b7 DB BUNDLED' : ' \u00b7 DB SYNCED') : ''}',
+              '${MediaQuery.of(context).size.width >= 600 ? (app.catalog.source == 'bundled' ? ' \u00b7 DB BUNDLED' : app.catalog.source == 'device_import' ? ' \u00b7 DB IMPORTED' : ' \u00b7 DB SYNCED') : ''}',
               live: app.online),
           const SizedBox(width: 2),
           Stack(clipBehavior: Clip.none, children: [
@@ -98,9 +99,14 @@ class _HomeShellState extends State<HomeShell> {
             onPressed: _openSettings,
           ),
           IconButton(
-            icon: Icon(app.isLoggedIn ? Icons.person : Icons.person_outline, size: 20),
-            tooltip: app.isLoggedIn ? app.session!.username : 'Sign in',
-            onPressed: app.isLoggedIn
+            icon: Icon(app.isLoggedIn || app.isLocalSignedIn ? Icons.person : Icons.person_outline, size: 20),
+            tooltip: app.isLoggedIn
+                ? app.session!.username
+                : app.isLocalSignedIn ? '${app.localUser!.username} (this device)' : 'Sign in',
+            onPressed: !app.isLoggedIn && app.isLocalSignedIn
+                ? () => showModalBottomSheet(context: context, isScrollControlled: true,
+                    builder: (_) => LocalAccountSheet(app: app))
+                : app.isLoggedIn
                 ? () => showModalBottomSheet(
                     context: context,
                     // isScrollControlled matters beyond just "let it get

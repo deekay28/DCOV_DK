@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/api_client.dart';
 import '../services/app_state.dart';
 import '../theme/dcov_theme.dart';
+import 'local_login_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   final AppState app;
@@ -171,6 +172,15 @@ class _LoginScreenState extends State<LoginScreen> {
           TextButton(onPressed: () => setState(() { _usePin = true; _error = null; }),
               child: Text('Use PIN for $_pinUsername instead', style: const TextStyle(fontSize: 12))),
         OutlinedButton(onPressed: widget.onSkip, child: const Text('CONTINUE OFFLINE')),
+        const SizedBox(height: 10),
+        // Offline accounts: sign-in, catalogue import and user management
+        // with no server at all (v1.2.0).
+        OutlinedButton.icon(
+          onPressed: () => Navigator.of(context).pushReplacement(MaterialPageRoute(
+              builder: (_) => LocalLoginScreen(app: widget.app), fullscreenDialog: true)),
+          icon: const Icon(Icons.phone_android, size: 18),
+          label: const Text('SIGN IN ON THIS DEVICE (NO SERVER)'),
+        ),
       ]);
 }
 

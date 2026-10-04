@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'device_import_screen.dart';
 import '../services/api_client.dart';
 import '../services/app_state.dart';
 import '../theme/dcov_theme.dart';
@@ -132,7 +133,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
               if (app.serverStatusDetail.isNotEmpty) _row('Detail', app.serverStatusDetail),
               _row('Catalogue source', app.catalog.source == 'server'
                   ? 'Synced from server' : app.catalog.source == 'server_cache'
-                  ? 'Last server sync (cached on device)' : 'Bundled with app'),
+                  ? 'Last server sync (cached on device)' : app.catalog.source == 'device_import'
+                  ? 'Imported on this device (${app.catalog.importInfo?['filename'] ?? 'file'})'
+                  : 'Bundled with app'),
               _row('Catalogue records', '${app.catalog.count}'
                   '${app.catalog.loadedAt != null && app.catalog.source != 'bundled' ? ' - synced ${app.catalog.loadedAt!.toLocal().toString().substring(0, 16)}' : ''}'),
               const SizedBox(height: 6),
@@ -145,9 +148,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
               if (_catalogueResult != null) Padding(padding: const EdgeInsets.only(top: 6),
                   child: Text(_catalogueResult!, style: const TextStyle(fontSize: 12)))
               else if (!app.isLoggedIn) Padding(padding: const EdgeInsets.only(top: 6),
-                  child: Text('Needs a signed-in server connection. Offline, the app uses the '
-                      'catalogue bundled with it or the last one downloaded.',
+                  child: Text('Downloads from a signed-in server. With no server, an administrator '
+                      'signed in on this device can import the catalogue from a file instead.',
                       style: TextStyle(fontSize: 11.5, color: t.ink2))),
+              if (app.canImportOnDevice) ...[
+                const SizedBox(height: 6),
+                OutlinedButton.icon(
+                  onPressed: () => Navigator.of(context).push(MaterialPageRoute(
+                      builder: (_) => DeviceImportScreen(app: app))),
+                  icon: const Icon(Icons.upload_file_outlined, size: 16),
+                  label: const Text('IMPORT CATALOGUE FROM FILE (THIS DEVICE)')),
+              ],
               const SizedBox(height: 10),
               Text('Server address', style: TextStyle(fontSize: 11.5, letterSpacing: 1,
                   color: t.silk, fontFamily: 'RobotoMono')),
