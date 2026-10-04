@@ -9,6 +9,33 @@ const Map<String, String> kBannerSub = {
   'not_found': 'Nothing in the catalogue matches this marking.',
 };
 
+/// Sub-line under the headline. Keyed on the headline first: several
+/// different reasons all downgrade a match to result 'unknown_origin'
+/// (uncertain identity, manufacturer-level record, low confidence), and
+/// "origin was never established" is only true for one of them - showing it
+/// for an approximate match to a part whose origin IS documented misled the
+/// inspector (found on the first device test, 2026-10-04).
+String bannerSubFor(Verdict v) {
+  final h = v.headline;
+  if (h.startsWith('IDENTITY UNCERTAIN')) {
+    return 'The marking only partly matches a catalogue record, so the part\'s identity is '
+        'not confirmed. The recorded origin applies only if it is the same part.';
+  }
+  if (h.startsWith('PROBABLE CHINESE')) {
+    return 'The closest catalogue record is Chinese-origin, but the marking only partly matches it.';
+  }
+  if (h.startsWith('OEM NON-CHINESE')) {
+    return 'Only the manufacturer\'s home country is on record, not where this component was made.';
+  }
+  if (h.startsWith('CHINESE MANUFACTURER')) {
+    return 'The catalogue records a Chinese manufacturer, not this unit\'s place of manufacture.';
+  }
+  if (h == 'ORIGIN NOT CONFIRMED') {
+    return 'The match is too weak to rely on the recorded origin.';
+  }
+  return kBannerSub[v.result] ?? '';
+}
+
 class VerdictBanner extends StatelessWidget {
   final Verdict verdict;
   const VerdictBanner({super.key, required this.verdict});
@@ -29,7 +56,7 @@ class VerdictBanner extends StatelessWidget {
         Text(verdict.headline, style: TextStyle(color: fg, fontSize: 24, fontWeight: FontWeight.w800,
             letterSpacing: -0.3, height: 1.15)),
         const SizedBox(height: 8),
-        Text(kBannerSub[verdict.result] ?? '', style: TextStyle(color: fg, fontSize: 13.5, height: 1.4)),
+        Text(bannerSubFor(verdict), style: TextStyle(color: fg, fontSize: 13.5, height: 1.4)),
         if (verdict.escalate || verdict.action.isNotEmpty) ...[
           const SizedBox(height: 12),
           Container(
