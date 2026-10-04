@@ -305,6 +305,30 @@ class AppState extends ChangeNotifier {
     }
   }
 
+  /// "UPDATE CATALOGUE NOW" in Settings. The automatic sync on sign-in /
+  /// reconnect is silent, so the first device test reported "no option of
+  /// updating the catalogue" - this makes the update visible and explains
+  /// why it cannot happen while signed out.
+  Future<String> updateCatalogueNow() async {
+    if (!isLoggedIn) {
+      return 'NOT UPDATED - sign in to a DCOV server first. The catalogue is maintained '
+          'on the server (admin: Import); the app downloads it from there.';
+    }
+    try {
+      if (!await ensureFreshToken()) {
+        return 'NOT UPDATED - session expired. Sign in again.';
+      }
+      final n = await catalog.refreshFromServer(api);
+      lastError = null;
+      notifyListeners();
+      return n > 0
+          ? 'CATALOGUE UPDATED - $n components downloaded from the server and saved for offline use.'
+          : 'NOT UPDATED - the server returned an empty catalogue; keeping the current one.';
+    } catch (e) {
+      return 'UPDATE FAILED - $e. Keeping the current catalogue.';
+    }
+  }
+
   // -------------------------------------------------------- notifications -- //
   int get unreadNotificationCount => notifications.where((n) => !n.read).length;
 
@@ -443,15 +467,15 @@ class AppState extends ChangeNotifier {
   /// "Test connection" in Settings: probes [url] without saving it.
   Future<String> testServer(String url) async {
     final clean = normaliseServerUrl(url);
-    if (clean == null || clean.isEmpty) return 'Not a valid address.';
+    if (clean == null || clean.isEmpty) return 'CONNECTION FAILED - not a valid address.';
     final probe = DcovApiClient(baseUrl: clean);
     try {
       final h = await probe.health(within: const Duration(seconds: 6));
       final rows = (h['index'] as Map?)?['rows'];
-      return 'OK - DCOV ${h['version'] ?? ''} answering'
+      return 'CONNECTED - DCOV ${h['version'] ?? ''} answering'
           '${rows != null ? ', $rows components in its catalogue' : ''}.';
     } catch (e) {
-      return 'No answer from $clean. Same Wi-Fi as the server? Server started with '
+      return 'CONNECTION FAILED - no answer from $clean. Same Wi-Fi as the server? Server started with '
           'run_lan_server? Firewall allowing the port? ($e)';
     } finally {
       probe.close();
