@@ -442,6 +442,16 @@ function toast(msg){
 }
 
 /* ------------------------------------------------------------ verify */
+// Keyed on the headline first - see bannerSubFor in verdict_widgets.dart.
+function bannerSubFor(v) {
+  const h = v.headline || '';
+  if (h.startsWith('IDENTITY UNCERTAIN')) return "The marking only partly matches a catalogue record, so the part's identity is not confirmed. The recorded origin applies only if it is the same part.";
+  if (h.startsWith('PROBABLE CHINESE')) return 'The closest catalogue record is Chinese-origin, but the marking only partly matches it.';
+  if (h.startsWith('OEM NON-CHINESE')) return "Only the manufacturer's home country is on record, not where this component was made.";
+  if (h.startsWith('CHINESE MANUFACTURER')) return "The catalogue records a Chinese manufacturer, not this unit's place of manufacture.";
+  if (h === 'ORIGIN NOT CONFIRMED') return 'The match is too weak to rely on the recorded origin.';
+  return BANNER_SUB[v.result] || '';
+}
 const BANNER_SUB = {
   chinese:  'Do not fit. Record the finding against the inspection.',
   non_chinese: 'No Chinese-origin record matched this marking. This is not a clearance — see Limits.',
@@ -504,7 +514,7 @@ function renderResult(raw, res, v, ms){
   let html = `<div class="banner b-${v.banner}">
       <div class="silk" style="color:inherit;opacity:.85">Verdict</div>
       <p class="verdict">${esc(v.headline)}</p>
-      <p class="sub">${esc(BANNER_SUB[v.result] || '')}</p>`;
+      <p class="sub">${esc(bannerSubFor(v))}</p>`;
   if (v.escalate) html += `<div class="escalate"><strong>Escalate.</strong> ${esc(v.escalation_note)}</div>`;
   if (v.action && !v.escalate) html += `<div class="escalate">${esc(v.action)}</div>`;
   html += `</div>`;
