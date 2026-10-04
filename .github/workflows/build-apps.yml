@@ -71,8 +71,12 @@ jobs:
       - name: Unit + widget tests
         run: |
           set -o pipefail
-          flutter test 2>&1 | tee ../test.log
+          flutter test --reporter expanded 2>&1 | tee ../test.log
           { echo "## flutter test"; echo '```'; tail -5 ../test.log; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          echo "::notice title=flutter test::$(grep -E '^[0-9:]+ \+[0-9]+' ../test.log | tail -1)"
+      - name: Explain analyze/test failure (public annotations)
+        if: failure()
+        run: python3 tool/report_dart_issues.py ../analyze.log ../test.log
 
       - name: Release signing (only if secrets are configured)
         env:
